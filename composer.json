@@ -1,0 +1,30 @@
+{
+    "name": "metaclass-nl/logical-filter-bundle",
+    "type": "symfony-bundle",
+    "description": "Under development",
+    "keywords": [],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "MetaClass",
+            "homepage": "http://www.metaclass.nl/"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=7.2.5",
+        "symfony/http-kernel": "^4.4 || ^5.1"
+    },
+    "require-dev": {
+    },
+    "suggest": {
+    },
+    "autoload": {
+        "psr-4": { "Metaclass\\FilterBundle": "src/" }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Metaclass\\LogicalFilterBundle\\Tests\\": "tests/"
+        }
+    }
+}
