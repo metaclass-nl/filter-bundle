@@ -1,7 +1,7 @@
 {
     "name": "metaclass-nl/logical-filter-bundle",
     "type": "symfony-bundle",
-    "description": "Under development",
+    "description": "Shared temporarily",
     "keywords": [],
     "license": "MIT",
     "authors": [
@@ -13,7 +13,8 @@
     "minimum-stability": "dev",
     "require": {
         "php": ">=7.2.5",
-        "symfony/http-kernel": "^4.4 || ^5.1"
+        "symfony/http-kernel": "^4.4 || ^5.1",
+        "api-platform/core": "^2.5"
     },
     "require-dev": {
     },
