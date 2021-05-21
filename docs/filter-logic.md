@@ -49,17 +49,17 @@ Add the following service configuration to your api config/services.yml:
         abstract: true
         autoconfigure: false
 ```
-
-Limitations
------------
+<b>It is important that FilterLogic::class is in the last ApiFilter annotation.</b>
 The normal filtering will still work as usual: filters decide how to apply
 themselves to the QueryBuilder. If all use ::andWhere, like the the
 built in filters of Api Platform, the order of the ApiFilter attribute/annotation
 does not matter, but if some use other methods a different order may yield different
-results. FilterLogic uses orWhere for "or" so the order matters. 
-If it is the last filter its logic expressions will become the topmost ones, 
+results. FilterLogic uses orWhere for "or" so the order matters.
+If it is the last filter its logic expressions will become the topmost ones,
 therefore defining the primary logic.
 
+Limitations
+-----------
 Works with built in filters of Api Platform that all use QueryBuilder::andWhere.
 May fail in (the rare) case that a custom filter uses QueryBuilder::where or ::add.
 You are advised to check the code of all custom and third party Filters and
