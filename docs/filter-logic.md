@@ -60,10 +60,17 @@ therefore defining the primary logic.
 
 Limitations
 -----------
-Works with built in filters of Api Platform that all use QueryBuilder::andWhere.
-May fail in (the rare) case that a custom filter uses QueryBuilder::where or ::add.
+Works with built in filters of Api Platform, except for DateFilter with exclude_null. 
+
+Assumes that filters create self-contained expressions in the sense that 
+the intended logic is not compromised if it is combined with the others and other
+self-contained expressions by Doctrine\ORM\Query\Expr\Andx or Doctrine\ORM\Query\Expr\Orx.
+May Fail if a filter uses QueryBuilder::where or ::add.
+
 You are advised to check the code of all custom and third party Filters and
-not to combine those that use QueryBuilder::where or ::add with FilterLogic.
+not to combine those that use QueryBuilder::where or ::add with FilterLogic
+or that produce complex logic that is not clearly self-contained.
+
 You can in/exclude filters by class name by configuring regExp. For example:
 ```php docblock
 * @ApiFilter(FilterLogic::class, arguments={"regExp"="/ApiPlatform\\Core\\Bridge\\Doctrine\\Orm\\Filter\\+/"})

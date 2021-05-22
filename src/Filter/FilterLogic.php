@@ -146,8 +146,12 @@ class FilterLogic extends AbstractContextAwareFilter
 
     /**
      * ASSUMPTION: filters do not use QueryBuilder::where or QueryBuilder::add
-     * and do not manipulate existing parts of DQLPart 'where'.
-     * Replace $where and first logical parts by instances of $expClass
+     * and create self-contained expressions in the sense that the intended
+     * logic is not compromised if it is combined with the others and other
+     * self-contained expressions by
+     * Doctrine\ORM\Query\Expr\Andx or Doctrine\ORM\Query\Expr\Orx.
+     *
+     * Replace $where by an instance of $expClass.
      * andWhere and orWhere allways add their args at the end of existing or
      * new logical expressions, so we started with a marker expression
      * to become the deepest first part. The marker should not be returned
@@ -178,7 +182,7 @@ class FilterLogic extends AbstractContextAwareFilter
             // Marker found, recursion ends here
             array_shift($parts);
         } else {
-            $parts[0] = $this->adaptWhere($expClass, $parts[0], $marker);
+            $parts[0] = $this->adaptWhere(get_class($parts[0]), $parts[0], $marker);
         }
         return new $expClass($parts);
     }
