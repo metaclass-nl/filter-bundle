@@ -1,8 +1,8 @@
 {
-    "name": "metaclass-nl/logical-filter-bundle",
+    "name": "metaclass-nl/filter-bundle",
     "type": "symfony-bundle",
-    "description": "Shared temporarily",
-    "keywords": [],
+    "description": "Filter bundle for API Platform, Filter Logic",
+    "keywords": ["filter", "logic", "wherefilter", "API Platform", "api-platform.com", "Doctrine ORM"],
     "license": "MIT",
     "authors": [
         {
