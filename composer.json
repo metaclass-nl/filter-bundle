@@ -21,7 +21,7 @@
     "suggest": {
     },
     "autoload": {
-        "psr-4": { "Metaclass\\FilterBundle": "src/" }
+        "psr-4": { "Metaclass\\FilterBundle\\": "src/" }
     },
     "autoload-dev": {
         "psr-4": {
