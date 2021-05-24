@@ -29,7 +29,7 @@ class FilterLogic extends AbstractContextAwareFilter
     /** @var ContainerInterface|FilterCollection  */
     private $filterLocator;
     /** @var string Filter classes must match this to be applied with logic */
-    private $regExp;
+    private $classExp;
 
     /**
      * @param ResourceMetadataFactoryInterface $resourceMetadataFactory
@@ -37,12 +37,12 @@ class FilterLogic extends AbstractContextAwareFilter
      * @param $regExp string Filter classes must match this to be applied with logic
      * {@inheritdoc}
      */
-    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, $filterLocator, string $regExp='//', ManagerRegistry $managerRegistry, RequestStack $requestStack=null, LoggerInterface $logger = null, array $properties = null, NameConverterInterface $nameConverter = null)
+    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, $filterLocator, string $classExp='//', ManagerRegistry $managerRegistry, RequestStack $requestStack=null, LoggerInterface $logger = null, array $properties = null, NameConverterInterface $nameConverter = null)
     {
         parent::__construct($managerRegistry, $requestStack, $logger, $properties, $nameConverter);
         $this->resourceMetadataFactory = $resourceMetadataFactory;
         $this->filterLocator = $filterLocator;
-        $this->regExp = $regExp;
+        $this->classExp = $classExp;
     }
 
     /** {@inheritdoc } */
@@ -182,7 +182,7 @@ class FilterLogic extends AbstractContextAwareFilter
             // Marker found, recursion ends here
             array_shift($parts);
         } else {
-            $parts[0] = $this->adaptWhere(get_class($parts[0]), $parts[0], $marker);
+            $parts[0] = $this->adaptWhere($expClass, $parts[0], $marker);
         }
         return new $expClass($parts);
     }
@@ -206,7 +206,7 @@ class FilterLogic extends AbstractContextAwareFilter
             if ($filter instanceof FilterInterface
                 && !($filter instanceof OrderFilter)
                 && $filter !== $this
-                && preg_match($this->regExp, get_class($filter))
+                && preg_match($this->classExp, get_class($filter))
             ) {
                 $result[$filterId] = $filter;
             }
