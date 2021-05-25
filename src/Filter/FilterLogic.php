@@ -146,10 +146,11 @@ class FilterLogic extends AbstractContextAwareFilter
 
     /**
      * ASSUMPTION: filters do not use QueryBuilder::where or QueryBuilder::add
-     * and create self-contained expressions in the sense that the intended
-     * logic is not compromised if it is combined with the others and other
-     * self-contained expressions by
-     * Doctrine\ORM\Query\Expr\Andx or Doctrine\ORM\Query\Expr\Orx.
+     * and create semantically complete expressions in the sense that expressions
+     * added to the QueryBundle through ::andWhere or ::orWhere do not depend
+     * on one another so that the intended logic is not compromised if they are
+     * recombined with the others by either Doctrine\ORM\Query\Expr\Andx
+     * or Doctrine\ORM\Query\Expr\Orx.
      *
      * Replace $where by an instance of $expClass.
      * andWhere and orWhere allways add their args at the end of existing or
