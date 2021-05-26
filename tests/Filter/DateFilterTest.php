@@ -14,6 +14,9 @@ use Metaclass\FilterBundle\Entity\TestEntity;
 use Metaclass\FilterBundle\Filter\FilterLogic;
 use Metaclass\FilterBundle\Tests\Utils\Reflection;
 
+/** This test is no longer needed but kept because it is referenced from
+ * the readme as an example of semantically complete and incomplete expressions
+ */
 class DateFilterTest extends KernelTestCase
 {
     /** @var ManagerRegistry doctrine */
@@ -72,7 +75,8 @@ AND
             $qb2->getDQL(),
             'DQL adaptedDateFilter produces 2 semantically complete expressions');
 
-        $this->assertNotEquals(
+        // was: assertNotEquals
+        $this->assertEquals(
             $this->qb->getDQL(),
             $qb2->getDQL(),
             'dql adapted against original'
@@ -89,7 +93,7 @@ AND
  o.dd >= :dd_p2
 "),
             $this->qb->getDQL(),
-            'Datefilter produces 3 expessions that depend on one another and therefore are not Semantically not complete');
+            'Datefilter produced 3 expessions that depended on one another and therefore are not Semantically not complete');
  */
     }
 

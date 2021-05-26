@@ -6,6 +6,7 @@ use ApiPlatform\Core\Api\FilterCollection;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\AbstractContextAwareFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\FilterInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\OrderFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\QueryExpressionGeneratorInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGeneratorInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Exception\ResourceClassNotFoundException;
@@ -22,7 +23,7 @@ use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
  * For usage and limitations see https://gist.github.com/metaclass-nl/790a5c8e9064f031db7d3379cc47c794
  * Copyright (c) MetaClass, Groningen, 2021. MIT License
  */
-class FilterLogic extends AbstractContextAwareFilter
+class FilterLogic extends AbstractContextAwareFilter implements QueryExpressionGeneratorInterface
 {
     /** @var ResourceMetadataFactoryInterface  */
     private $resourceMetadataFactory;
@@ -62,13 +63,13 @@ class FilterLogic extends AbstractContextAwareFilter
         $filters = $this->getFilters($resourceClass, $operationName);
 
         if ($parameter == 'and') {
-            $newWhere = $this->applyLogic($filters, 'and', $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
-            $queryBuilder->andWhere($newWhere);
+            return [$this->applyLogic($filters, 'and', $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)];
+
         }
         if ($parameter == 'or') {
-            $newWhere = $this->applyLogic($filters, 'or', $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
-            $queryBuilder->orWhere($newWhere);
+            return [$this->applyLogic($filters, 'or', $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)];
         }
+        return null;
     }
 
     /**
@@ -80,22 +81,20 @@ class FilterLogic extends AbstractContextAwareFilter
      */
     private function applyLogic($filters, $operator, $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)
     {
-        $oldWhere = $queryBuilder->getDQLPart('where');
-
-        // replace by marker expression
-        $marker = new Expr\Func('NOT', []);
-        $queryBuilder->add('where', $marker);
-
         $subFilters = $context['filters'][$operator];
         // print json_encode($subFilters, JSON_PRETTY_PRINT);
         $assoc = [];
         $logic = [];
+        $expressions = [];
         foreach ($subFilters as $key => $value) {
             if (ctype_digit((string) $key)) {
                 // allows the same filter to be applied several times, usually with different arguments
                 $subcontext = $context; //copies
                 $subcontext['filters'] = $value;
-                $this->applyFilters($filters, $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext);
+                $expressions = array_merge(
+                    $expressions,
+                    $this->collectExpressions($filters, $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext)
+                );
 
                 // apply logic seperately
                 if (isset($value['and'])) {
@@ -113,79 +112,37 @@ class FilterLogic extends AbstractContextAwareFilter
         // Process $assoc
         $subcontext = $context; //copies
         $subcontext['filters'] = $assoc;
-        $this->applyFilters($filters, $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext);
+        $expressions = array_merge(
+            $expressions,
+            $this->collectExpressions($filters, $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext)
+        );
 
-        $newWhere = $queryBuilder->getDQLPart('where');
-        $queryBuilder->add('where', $oldWhere); //restores old where
-
-        // force $operator logic upon $newWhere
-        if ($operator == 'and') {
-            $adaptedPart = $this->adaptWhere(Expr\Andx::class, $newWhere, $marker);
-        } else {
-            $adaptedPart = $this->adaptWhere(Expr\Orx::class, $newWhere, $marker);
-        }
+        $result = $operator == 'and'
+            ? new Expr\Andx($expressions)
+            : new Expr\Orx($expressions);
 
         // Process logic
         foreach ($logic as $eachLogic) {
             $subcontext = $context; //copies
             $subcontext['filters'] = $eachLogic;
             $newWhere = $this->applyLogic($filters, key($eachLogic), $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext);
-            $adaptedPart->add($newWhere); // empty expressions are ignored by ::add
+            $result->add($newWhere); // empty expressions are ignored by ::add
         }
 
-        return $adaptedPart; // may be empty
+        return $result; // may be empty
     }
 
-    /** Calls ::apply on each filter in $filters */
-    private function applyFilters($filters, $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)
+    /** Calls ::generateExpressions on each filter in $filters */
+    private function collectExpressions($filters, $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)
     {
+        $expressions = [];
         foreach ($filters as $filter) {
-            $filter->apply($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
+            $expressions = array_merge(
+                $expressions,
+                $filter->generateExpressions($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)
+            );
         }
-    }
-
-    /**
-     * ASSUMPTION: filters do not use QueryBuilder::where or QueryBuilder::add
-     * and create semantically complete expressions in the sense that expressions
-     * added to the QueryBundle through ::andWhere or ::orWhere do not depend
-     * on one another so that the intended logic is not compromised if they are
-     * recombined with the others by either Doctrine\ORM\Query\Expr\Andx
-     * or Doctrine\ORM\Query\Expr\Orx.
-     *
-     * Replace $where by an instance of $expClass.
-     * andWhere and orWhere allways add their args at the end of existing or
-     * new logical expressions, so we started with a marker expression
-     * to become the deepest first part. The marker should not be returned
-     * @param string $expClass
-     * @param Expr\Andx | Expr\Orx $where Result from applying filters
-     * @param Expr\Func $marker Marks the end of logic resulting from applying filters
-     * @return Expr\Andx | Expr\Orx Instance of $expClass
-     * @throws \LogicException if assumption proves wrong
-     */
-    private function adaptWhere($expClass, $where, $marker)
-    {
-        if ($where === $marker) {
-            // Filters did nothing
-            return new $expClass([]);
-        }
-
-        if (!$where instanceof Expr\Andx && !$where instanceof Expr\Orx) {
-            // A filter used QueryBuilder::where or QueryBuilder::add or otherwise
-            throw new \LogicException("Assumpion failure, unexpected Expression: ". $where);
-        }
-        $parts = $where->getParts();
-        if (empty($parts)) {
-            // A filter used QueryBuilder::where or QueryBuilder::add or otherwise
-            throw new \LogicException("Assumpion failure, marker not found");
-        }
-
-        if ($parts[0] === $marker) {
-            // Marker found, recursion ends here
-            array_shift($parts);
-        } else {
-            $parts[0] = $this->adaptWhere($expClass, $parts[0], $marker);
-        }
-        return new $expClass($parts);
+        return $expressions;
     }
 
     /**

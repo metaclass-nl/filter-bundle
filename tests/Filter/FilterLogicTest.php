@@ -55,7 +55,6 @@ class FilterLogicTest extends KernelTestCase
         $this->filters[] = new SearchFilter($this->doctrine, $requestStack, $iriConverter, null, $logger, ['text' => null], null, $nameConverter);
         $this->filters[] = new ExistsFilter($this->doctrine, $requestStack, $logger, ['bool' => null, 'dd' => null]);
         $this->filters[] = new BooleanFilter($this->doctrine, $requestStack, $logger, ['bool' => null]);
-        $this->filters[] = new FilterToTestAssumptions();
     }
 
     public function testWithDateFilterTwoAssoc()
@@ -313,42 +312,5 @@ class FilterLogicTest extends KernelTestCase
             'Parameter bool_p2');
     }
 
-    public function testAssumptionWhereNotSet()
-    {
-        $this->expectException(\LogicException::class );
-        $this->expectExceptionMessage("Assumpion failure, unexpected Expression: text = :text_p3");
-        $operator = 'or';
-        $reqData = null;
-        parse_str('or[setWhere][text]=foo&or[dd][before]=2021-01-01&or[dd][after]=2021-03-03', $reqData);
-        // var_dump($reqData);
-        $context = ['filters' => $reqData];
-        $args = [$this->filters, $operator, $this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
-        $result = Reflection::callMethod($this->filterLogic, 'applyLogic', $args);
-    }
 
-    public function testAssumptionMarkerFirst()
-    {
-        $this->expectException(\LogicException::class );
-        $this->expectExceptionMessage("Assumpion failure, unexpected Expression: foo = :foo_p3");
-        $operator = 'or';
-        $reqData = null;
-        parse_str('or[dd][before]=2021-01-01&or[dd][after]=2021-03-03&or[insertBeforeMarker][foo]=bar', $reqData);
-        // var_dump($reqData);
-        $context = ['filters' => $reqData];
-        $args = [$this->filters, $operator, $this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
-        $result = Reflection::callMethod($this->filterLogic, 'applyLogic', $args);
-    }
-
-    public function testAssumptionWhereEmptyOrx()
-    {
-        $this->expectException(\LogicException::class );
-        $this->expectExceptionMessage("Assumpion failure, marker not found");
-        $operator = 'or';
-        $reqData = null;
-        parse_str('or[setWhereEmptyOrx]=foo&or[dd][before]=2021-01-01&or[dd][after]=2021-03-03', $reqData);
-        // var_dump($reqData);
-        $context = ['filters' => $reqData];
-        $args = [$this->filters, $operator, $this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
-        $result = Reflection::callMethod($this->filterLogic, 'applyLogic', $args);
-    }
 }
