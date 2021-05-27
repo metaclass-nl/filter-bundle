@@ -5,6 +5,14 @@ Combines existing API Platform ORM Filters with AND and OR according to client r
 - supports multiple criteria for the same property
 - existing requests keep working unmodified if not using "and" or "or" as query parameters
 
+Branch query-expression-generator
+---------------------------------
+This branch uses the interface QueryExpressionGeneratorInterface from the
+[proof of concept to make existing filters composable](https://github.com/metaclass-nl/core/tree/query-expression-generator).
+It only uses filters that declare to implement this interface and ignores the others.
+A version that works without this interface but has an extra limitation with respect to 
+custom filters is available in [this branch](https://github.com/metaclass-nl/filter-bundle/).
+
 Usage
 -----
 Once the FilterLogic class and service configuration have been installed in you app,
@@ -58,12 +66,10 @@ expressions added to the QueryBundle through ::andWhere or ::orWhere do not depe
 on one another so that the intended logic is not compromised if they are recombined
 with the others by either Doctrine\ORM\Query\Expr\Andx or Doctrine\ORM\Query\Expr\Orx.
 
-May Fail if a filter uses QueryBuilder::where or ::add.
-
 You are advised to check the code of all custom and third party Filters and
-not to combine those that use QueryBuilder::where or ::add with FilterLogic
-or that produce complex logic that is not semantically complete. For an
-example of semantically complete and incomplete expressions see [DateFilterTest](./tests/Filter/DateFilterTest.php).
+not to combine those that produce complex logic that is not semantically complete. 
+For an example of semantically complete and incomplete expressions 
+see [DateFilterTest](./tests/Filter/DateFilterTest.php).
 
 You can in/exclude filters by class name by configuring classExp. For example:
 ```php docblock

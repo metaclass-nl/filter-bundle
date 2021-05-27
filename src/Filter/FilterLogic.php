@@ -161,7 +161,7 @@ class FilterLogic extends AbstractContextAwareFilter implements QueryExpressionG
             $filter = $this->filterLocator->has($filterId)
                 ? $this->filterLocator->get($filterId)
                 :  null;
-            if ($filter instanceof FilterInterface
+            if ($filter instanceof QueryExpressionGeneratorInterface
                 && !($filter instanceof OrderFilter)
                 && $filter !== $this
                 && preg_match($this->classExp, get_class($filter))

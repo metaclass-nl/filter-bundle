@@ -93,7 +93,7 @@ AND
  o.dd >= :dd_p2
 "),
             $this->qb->getDQL(),
-            'Datefilter produced 3 expessions that depended on one another and therefore are not Semantically not complete');
+            'Datefilter produced 3 expessions that depended on one another and therefore are not Semantically complete');
  */
     }
 

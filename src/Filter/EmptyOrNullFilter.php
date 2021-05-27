@@ -10,6 +10,7 @@ use ApiPlatform\Core\Bridge\Doctrine\Common\Filter\ExistsFilterTrait;
 use ApiPlatform\Core\Bridge\Doctrine\Common\Filter\SearchFilterInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\AbstractContextAwareFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\ExistsFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\QueryExpressionGeneratorInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGeneratorInterface;
 use Doctrine\ORM\QueryBuilder;
@@ -19,7 +20,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
 
-class EmptyOrNullFilter extends AbstractContextAwareFilter implements SearchFilterInterface
+class EmptyOrNullFilter extends AbstractContextAwareFilter implements QueryExpressionGeneratorInterface
 {
     private $searchFilter;
     private $existsFilter;
