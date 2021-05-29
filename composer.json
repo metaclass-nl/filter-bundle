@@ -11,10 +11,16 @@
         }
     ],
     "minimum-stability": "dev",
+    "repositories": [
+        {
+            "type": "git",
+            "url": "https://github.com/metaclass-nl/core.git"
+        }
+    ],
     "require": {
         "php": ">=7.2.5",
         "symfony/http-kernel": "^4.4 || ^5.1",
-        "api-platform/core": "^2.5"
+        "api-platform/core": "dev-query-expression-generator"
     },
     "require-dev": {
     },
