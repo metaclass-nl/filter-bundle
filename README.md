@@ -44,10 +44,11 @@ criteria for the desciption needs to be true for an order to be returned.
 
 Installation
 ------------
-With composer:
-```shell
-composer require metaclass-nl/filter-bundle
+Add the following to the "require" section of your composer.json:
+```json
+    "metaclass-nl/filter-bundle": "dev-query-expression-generator",
 ```
+and run composer update.
 
 Then add the bundle to your api config/bundles.php:
 ```php
