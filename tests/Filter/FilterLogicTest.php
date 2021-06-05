@@ -65,7 +65,8 @@ class FilterLogicTest extends KernelTestCase
         parse_str('or[dd][before]=2021-01-01&or[dd][after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $result = $this->filterLogic->generateExpressions($this->qb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
         $this->assertEquals(
@@ -90,7 +91,8 @@ class FilterLogicTest extends KernelTestCase
         parse_str('page=1&or[][dd][before]=2021-01-01&or[][dd][after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $result = $this->filterLogic->generateExpressions($this->qb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
         $this->assertEquals(
@@ -115,7 +117,8 @@ class FilterLogicTest extends KernelTestCase
         parse_str('page=1&or[][dd][before]=2021-01-01&or[dd][after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $result = $this->filterLogic->generateExpressions($this->qb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
         $this->assertEquals(
@@ -140,7 +143,8 @@ class FilterLogicTest extends KernelTestCase
         parse_str('and[numb]=7.2&and[or][dd][before]=2021-01-01&and[or][dd][after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $result = $this->filterLogic->generateExpressions($this->qb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
         $this->assertEquals(
@@ -169,7 +173,8 @@ class FilterLogicTest extends KernelTestCase
         parse_str('and[numb]=7.2&and[0][or][dd][before]=2021-01-01&and[0][or][dd][after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $result = $this->filterLogic->generateExpressions($this->qb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
         $this->assertEquals(
@@ -198,7 +203,8 @@ class FilterLogicTest extends KernelTestCase
         parse_str('and[numb]=7.2&and[or][dd][before]=2021-01-01&and[0][or][dd][after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $result = $this->filterLogic->generateExpressions($this->qb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
         // Two seperate ors with each a single criterium are both ignoored
@@ -228,7 +234,8 @@ class FilterLogicTest extends KernelTestCase
         parse_str('or[numb][lte]=55&or[numb][gt]=2.7', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $result = $this->filterLogic->generateExpressions($this->qb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
         $this->assertEquals(
@@ -253,7 +260,8 @@ class FilterLogicTest extends KernelTestCase
         parse_str('or[][numb]=55&or[][numb]=2.7', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $result = $this->filterLogic->generateExpressions($this->qb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
         $this->assertEquals(
@@ -277,7 +285,8 @@ class FilterLogicTest extends KernelTestCase
         parse_str('or[exists][bool]=true&or[exists][dd]=false', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $result = $this->filterLogic->generateExpressions($this->qb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
         $this->assertEquals(
@@ -294,7 +303,8 @@ class FilterLogicTest extends KernelTestCase
         parse_str('or[][bool]=true&or[][bool]=false', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $result = $this->filterLogic->generateExpressions($this->qb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
         $this->assertEquals(

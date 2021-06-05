@@ -149,7 +149,8 @@ AND
         parse_str('or[dd][before]=2021-01-01&or[dd][after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $result = $this->filterLogic->generateExpressions($this->qb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(
             1,

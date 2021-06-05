@@ -4,6 +4,7 @@ namespace Metaclass\FilterBundle\Filter;
 
 use ApiPlatform\Core\Api\FilterCollection;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\AbstractContextAwareFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\ContextAwareFilterInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\FilterInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\OrderFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\QueryExpressionGeneratorInterface;
@@ -32,7 +33,7 @@ class FilterLogic extends AbstractContextAwareFilter implements QueryExpressionG
     private $filterLocator;
     /** @var string Filter classes must match this to be applied with logic */
     private $classExp;
-
+    /** @var ContextAwareFilterInterface[] */
     private $filters;
 
     /**
@@ -59,12 +60,13 @@ class FilterLogic extends AbstractContextAwareFilter implements QueryExpressionG
     /**
      * {@inheritdoc}
      * @throws ResourceClassNotFoundException
-     * @throws \LogicException if assumption proves wrong
      */
     public function apply(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, string $operationName = null, array $context = [])
     {
+        if (!isset($context['filters']) || !\is_array($context['filters'])) {
+            throw new \InvalidArgumentException('::apply without $context[filters] not supported');
+        }
         $this->filters = $this->getFilters($resourceClass, $operationName);
-        $subcontext = $context; //copies
 
         if (isset($context['filters']['and']) ) {
             $expressions = $this->filterProperty('and', $context['filters']['and'], $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
@@ -84,9 +86,17 @@ class FilterLogic extends AbstractContextAwareFilter implements QueryExpressionG
 
     /**
      * {@inheritdoc}
-     * @throws \LogicException if assumption proves wrong
      */
     public function generateExpressions(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, string $operationName = null, array $context = [])
+    {
+        if (!isset($context['filters']) || !\is_array($context['filters'])) {
+            throw new \InvalidArgumentException('::generateExpressions without $context[filters] not supported');
+        }
+        $this->filters = $this->getFilters($resourceClass, $operationName);
+        return $this->doGenerate($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
+    }
+
+    protected function doGenerate($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)
     {
         $assoc = [];
         $logic = [];
@@ -138,7 +148,7 @@ class FilterLogic extends AbstractContextAwareFilter implements QueryExpressionG
     {
         $subcontext = $context; //copies
         $subcontext['filters'] = $value;
-        return $this->generateExpressions($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext);
+        return $this->doGenerate($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext);
     }
 
     /** Calls ::generateExpressions on each filter in $filters */
@@ -171,6 +181,7 @@ class FilterLogic extends AbstractContextAwareFilter implements QueryExpressionG
                 ? $this->filterLocator->get($filterId)
                 :  null;
             if ($filter instanceof QueryExpressionGeneratorInterface
+                && $filter instanceof ContextAwareFilterInterface
                 && !($filter instanceof OrderFilter)
                 && $filter !== $this
                 && preg_match($this->classExp, get_class($filter))
