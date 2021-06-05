@@ -17,6 +17,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\DateFilter;
 
 /**
  * Combines existing API Platform ORM Filters with AND and OR.
@@ -31,6 +32,8 @@ class FilterLogic extends AbstractContextAwareFilter implements QueryExpressionG
     private $filterLocator;
     /** @var string Filter classes must match this to be applied with logic */
     private $classExp;
+
+    private $filters;
 
     /**
      * @param ResourceMetadataFactoryInterface $resourceMetadataFactory
@@ -58,42 +61,44 @@ class FilterLogic extends AbstractContextAwareFilter implements QueryExpressionG
      * @throws ResourceClassNotFoundException
      * @throws \LogicException if assumption proves wrong
      */
-    protected function filterProperty(string $parameter, $value, QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, string $operationName = null, array $context = [])
+    public function apply(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, string $operationName = null, array $context = [])
     {
-        $filters = $this->getFilters($resourceClass, $operationName);
+        $this->filters = $this->getFilters($resourceClass, $operationName);
+        $subcontext = $context; //copies
 
-        if ($parameter == 'and') {
-            return [$this->applyLogic($filters, 'and', $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)];
+        if (isset($context['filters']['and']) ) {
+            $expressions = $this->filterProperty('and', $context['filters']['and'], $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
+            foreach($expressions as $exp) {
+                $queryBuilder->andWhere($exp);
+            };
 
         }
-        if ($parameter == 'or') {
-            return [$this->applyLogic($filters, 'or', $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)];
+        if (isset($context['filters']['or'])) {
+            $expressions = $this->filterProperty('or', $context['filters']['or'], $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
+            foreach($expressions as $exp) {
+                $queryBuilder->orWhere($exp);
+            };
         }
         return null;
     }
 
     /**
-     * Applies filters in logic context
-     * @param FilterInterface[] $filters to apply in context of $operator
-     * @param string $operator 'and' or 'or
-     * @return mixed Valid argument for Expr\Andx::add and Expr\Orx::add
+     * {@inheritdoc}
      * @throws \LogicException if assumption proves wrong
      */
-    private function applyLogic($filters, $operator, $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)
+    public function generateExpressions(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, string $operationName = null, array $context = [])
     {
-        $subFilters = $context['filters'][$operator];
-        // print json_encode($subFilters, JSON_PRETTY_PRINT);
         $assoc = [];
         $logic = [];
         $expressions = [];
-        foreach ($subFilters as $key => $value) {
+        foreach ($context['filters'] as $key => $value) {
             if (ctype_digit((string) $key)) {
                 // allows the same filter to be applied several times, usually with different arguments
                 $subcontext = $context; //copies
                 $subcontext['filters'] = $value;
                 $expressions = array_merge(
                     $expressions,
-                    $this->collectExpressions($filters, $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext)
+                    $this->collectExpressions($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext)
                 );
 
                 // apply logic seperately
@@ -114,29 +119,33 @@ class FilterLogic extends AbstractContextAwareFilter implements QueryExpressionG
         $subcontext['filters'] = $assoc;
         $expressions = array_merge(
             $expressions,
-            $this->collectExpressions($filters, $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext)
+            $this->collectExpressions($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext)
         );
-
-        $result = $operator == 'and'
-            ? new Expr\Andx($expressions)
-            : new Expr\Orx($expressions);
 
         // Process logic
         foreach ($logic as $eachLogic) {
-            $subcontext = $context; //copies
-            $subcontext['filters'] = $eachLogic;
-            $newWhere = $this->applyLogic($filters, key($eachLogic), $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext);
-            $result->add($newWhere); // empty expressions are ignored by ::add
+            $subExpressions = $this->filterProperty(key($eachLogic), current($eachLogic), $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
+            $expressions[] = key($eachLogic) == 'or'
+                ? new Expr\Orx($subExpressions)
+                : new Expr\Andx($subExpressions);
+
         }
 
-        return $result; // may be empty
+        return $expressions; // may be empty
+    }
+
+    protected function filterProperty(string $property, $value, QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, string $operationName = null, $context=[])
+    {
+        $subcontext = $context; //copies
+        $subcontext['filters'] = $value;
+        return $this->generateExpressions($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext);
     }
 
     /** Calls ::generateExpressions on each filter in $filters */
-    private function collectExpressions($filters, $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)
+    private function collectExpressions($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)
     {
         $expressions = [];
-        foreach ($filters as $filter) {
+        foreach ($this->filters as $filter) {
             $expressions = array_merge(
                 $expressions,
                 $filter->generateExpressions($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)
