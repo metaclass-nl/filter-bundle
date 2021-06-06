@@ -278,6 +278,82 @@ class FilterLogicTest extends KernelTestCase
             'Parameter numb_p2');
     }
 
+    public function testNotWithSearchFilter()
+    {
+        $reqData = null;
+        parse_str('not[][numb]=55&not[][numb]=2.7', $reqData);
+        // var_dump($reqData);
+        $context = ['filters' => $reqData];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
+
+        $this->assertEquals(2, count($result), 'number of expressions');
+        $this->assertEquals(
+            "NOT(o.numb = :numb_p1)",
+            (string) $result[0],
+            'expression 0');
+        $this->assertEquals(
+            "NOT(o.numb = :numb_p2)",
+            (string) $result[1],
+            'expression 1');
+        $this->assertEquals(
+            55,
+            $this->qb->getParameter('numb_p1')->getValue(),
+            'Parameter numb_p1');
+        $this->assertEquals(
+            2.7,
+            $this->qb->getParameter('numb_p2')->getValue(),
+            'Parameter numb_p2');
+    }
+
+    public function testOrNotWithSearchFilter()
+    {
+        $reqData = null;
+        parse_str('or[not][][numb]=55&or[not][][numb]=2.7', $reqData);
+        // var_dump($reqData);
+        $context = ['filters' => $reqData];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
+
+        $this->assertEquals(1, count($result), 'number of expressions');
+        $this->assertEquals(
+            "NOT(o.numb = :numb_p1) OR NOT(o.numb = :numb_p2)",
+            (string) $result[0],
+            'expression 0');
+        $this->assertEquals(
+            55,
+            $this->qb->getParameter('numb_p1')->getValue(),
+            'Parameter numb_p1');
+        $this->assertEquals(
+            2.7,
+            $this->qb->getParameter('numb_p2')->getValue(),
+            'Parameter numb_p2');
+    }
+
+    public function testNotOrWithSearchFilter()
+    {
+        $reqData = null;
+        parse_str('not[or][][numb]=55&not[or][][numb]=2.7', $reqData);
+        // var_dump($reqData);
+        $context = ['filters' => $reqData];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
+
+        $this->assertEquals(1, count($result), 'number of expressions');
+        $this->assertEquals(
+            "NOT(o.numb = :numb_p1 OR o.numb = :numb_p2)",
+            (string) $result[0],
+            'expression 0');
+        $this->assertEquals(
+            55,
+            $this->qb->getParameter('numb_p1')->getValue(),
+            'Parameter numb_p1');
+        $this->assertEquals(
+            2.7,
+            $this->qb->getParameter('numb_p2')->getValue(),
+            'Parameter numb_p2');
+    }
+
     public function testWithExistsFilter()
     {
         $operator = 'or';

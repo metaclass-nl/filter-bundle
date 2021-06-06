@@ -18,7 +18,6 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\DateFilter;
 
 /**
  * Combines existing API Platform ORM Filters with AND and OR.
@@ -73,7 +72,13 @@ class FilterLogic extends AbstractContextAwareFilter implements QueryExpressionG
             foreach($expressions as $exp) {
                 $queryBuilder->andWhere($exp);
             };
-
+        }
+        if (isset($context['filters']['not']) ) {
+            // NOT expressions are combined by parent logic, here defaulted to AND
+            $expressions = $this->filterProperty('not', $context['filters']['not'], $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
+            foreach($expressions as $exp) {
+                $queryBuilder->andWhere(new Expr\Func('NOT', [$exp]));
+            };
         }
         if (isset($context['filters']['or'])) {
             $expressions = $this->filterProperty('or', $context['filters']['or'], $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
@@ -116,8 +121,10 @@ class FilterLogic extends AbstractContextAwareFilter implements QueryExpressionG
                     $logic[]['and'] =  $value['and'];
                 }if (isset($value['or'])) {
                     $logic[]['or'] =  $value['or'];
+                }if (isset($value['not'])) {
+                    $logic[]['not'] =  $value['not'];
                 }
-            } elseif (in_array($key, ['and', 'or'])) {
+            } elseif (in_array($key, ['and', 'or', 'not'])) {
                 $logic[][$key] = $value;
             } else {
                 $assoc[$key] = $value;
@@ -135,10 +142,16 @@ class FilterLogic extends AbstractContextAwareFilter implements QueryExpressionG
         // Process logic
         foreach ($logic as $eachLogic) {
             $subExpressions = $this->filterProperty(key($eachLogic), current($eachLogic), $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
-            $expressions[] = key($eachLogic) == 'or'
-                ? new Expr\Orx($subExpressions)
-                : new Expr\Andx($subExpressions);
-
+            if (key($eachLogic) == 'not') {
+                // NOT expressions are combined by parent logic
+                foreach ($subExpressions as $subExp) {
+                    $expressions[] = new Expr\Func('NOT', [$subExp]);
+                }
+            } else {
+                $expressions[] = key($eachLogic) == 'or'
+                    ? new Expr\Orx($subExpressions)
+                    : new Expr\Andx($subExpressions);
+            }
         }
 
         return $expressions; // may be empty
