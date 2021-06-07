@@ -119,11 +119,10 @@ class FilterLogic extends AbstractContextAwareFilter
         $queryBuilder->add('where', $oldWhere); //restores old where
 
         // force $operator logic upon $newWhere
-        if ($operator == 'and') {
-            $adaptedPart = $this->adaptWhere(Expr\Andx::class, $newWhere, $marker);
-        } else {
-            $adaptedPart = $this->adaptWhere(Expr\Orx::class, $newWhere, $marker);
-        }
+        $expressions = $this->getAppliedExpressions($newWhere, $marker);
+        $adaptedPart = $operator == 'and'
+            ? new Expr\Andx($expressions)
+            : new Expr\Orx($expressions);
 
         // Process logic
         foreach ($logic as $eachLogic) {
@@ -152,23 +151,20 @@ class FilterLogic extends AbstractContextAwareFilter
      * recombined with the others by either Doctrine\ORM\Query\Expr\Andx
      * or Doctrine\ORM\Query\Expr\Orx.
      *
-     * Replace $where by an instance of $expClass.
+     * Get expressions from $where
      * andWhere and orWhere allways add their args at the end of existing or
      * new logical expressions, so we started with a marker expression
      * to become the deepest first part. The marker should not be returned
-     * @param string $expClass
      * @param Expr\Andx | Expr\Orx $where Result from applying filters
      * @param Expr\Func $marker Marks the end of logic resulting from applying filters
-     * @return Expr\Andx | Expr\Orx Instance of $expClass
+     * @return array of ORM Expression
      * @throws \LogicException if assumption proves wrong
      */
-    private function adaptWhere($expClass, $where, $marker)
+    private function getAppliedExpressions($where, $marker)
     {
         if ($where === $marker) {
-            // Filters did nothing
-            return new $expClass([]);
+            return [];
         }
-
         if (!$where instanceof Expr\Andx && !$where instanceof Expr\Orx) {
             // A filter used QueryBuilder::where or QueryBuilder::add or otherwise
             throw new \LogicException("Assumpion failure, unexpected Expression: ". $where);
@@ -179,13 +175,9 @@ class FilterLogic extends AbstractContextAwareFilter
             throw new \LogicException("Assumpion failure, marker not found");
         }
 
-        if ($parts[0] === $marker) {
-            // Marker found, recursion ends here
-            array_shift($parts);
-        } else {
-            $parts[0] = $this->adaptWhere($expClass, $parts[0], $marker);
-        }
-        return new $expClass($parts);
+        $firstPart = array_shift($parts);
+        $parts = array_merge($parts, $this->getAppliedExpressions($firstPart, $marker));
+        return $parts;
     }
 
     /**
