@@ -4,6 +4,7 @@ namespace Metaclass\FilterBundle\Filter;
 
 use ApiPlatform\Core\Api\FilterCollection;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\AbstractContextAwareFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\ContextAwareFilterInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\FilterInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\OrderFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGeneratorInterface;
@@ -30,6 +31,8 @@ class FilterLogic extends AbstractContextAwareFilter
     private $filterLocator;
     /** @var string Filter classes must match this to be applied with logic */
     private $classExp;
+    /** @var ContextAwareFilterInterface[] */
+    private $filters;
 
     /**
      * @param ResourceMetadataFactoryInterface $resourceMetadataFactory
@@ -57,28 +60,62 @@ class FilterLogic extends AbstractContextAwareFilter
      * @throws ResourceClassNotFoundException
      * @throws \LogicException if assumption proves wrong
      */
-    protected function filterProperty(string $parameter, $value, QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, string $operationName = null, array $context = [])
+    public function apply(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, string $operationName = null, array $context = [])
     {
-        $filters = $this->getFilters($resourceClass, $operationName);
-
-        if ($parameter == 'and') {
-            $newWhere = $this->applyLogic($filters, 'and', $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
-            $queryBuilder->andWhere($newWhere);
+        if (!isset($context['filters']) || !\is_array($context['filters'])) {
+            throw new \InvalidArgumentException('::apply without $context[filters] not supported');
         }
-        if ($parameter == 'or') {
-            $newWhere = $this->applyLogic($filters, 'or', $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
-            $queryBuilder->orWhere($newWhere);
+        $this->filters = $this->getFilters($resourceClass, $operationName);
+
+        if (isset($context['filters']['and']) ) {
+            $expressions = $this->filterProperty('and', $context['filters']['and'], $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
+            foreach($expressions as $exp) {
+                $queryBuilder->andWhere($exp);
+            };
+        }
+        if (isset($context['filters']['not']) ) {
+            // NOT expressions are combined by parent logic, here defaulted to AND
+            $expressions = $this->filterProperty('not', $context['filters']['not'], $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
+            foreach($expressions as $exp) {
+                $queryBuilder->andWhere(new Expr\Func('NOT', [$exp]));
+            };
+        }
+        if (isset($context['filters']['or'])) {
+            $expressions = $this->filterProperty('or', $context['filters']['or'], $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
+            foreach($expressions as $exp) {
+                $queryBuilder->orWhere($exp);
+            };
         }
     }
 
     /**
-     * Applies filters in logic context
-     * @param FilterInterface[] $filters to apply in context of $operator
-     * @param string $operator 'and' or 'or
-     * @return mixed Valid argument for Expr\Andx::add and Expr\Orx::add
+     * @return array of Doctrine\ORM\Query\Expr\* and/or string (DQL),
+     * each of which must be self-contained in the sense that the intended
+     * logic is not compromised if it is combined with the others and other
+     * self-contained expressions by
+     * Doctrine\ORM\Query\Expr\Andx or Doctrine\ORM\Query\Expr\Orx
+     *
+     * Adds parameters and joins to $queryBuilder.
+     * Caller of this function is responsable for adding the generated
+     * expressions to $queryBuilder so that the parameters in the query will
+     * correspond 1 to 1 with the parameters that where added by this function.
+     * In practice this comes down to adding EACH expression to $queryBuilder
+     * once and only once.
      * @throws \LogicException if assumption proves wrong
      */
-    private function applyLogic($filters, $operator, $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)
+    public function generateExpressions(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, string $operationName = null, array $context = [])
+    {
+        if (!isset($context['filters']) || !\is_array($context['filters'])) {
+            throw new \InvalidArgumentException('::generateExpressions without $context[filters] not supported');
+        }
+        $this->filters = $this->getFilters($resourceClass, $operationName);
+        return $this->doGenerate($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
+    }
+
+    /**
+     * @throws \LogicException if assumption proves wrong
+     */
+    protected function doGenerate($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)
     {
         $oldWhere = $queryBuilder->getDQLPart('where');
 
@@ -86,24 +123,24 @@ class FilterLogic extends AbstractContextAwareFilter
         $marker = new Expr\Func('NOT', []);
         $queryBuilder->add('where', $marker);
 
-        $subFilters = $context['filters'][$operator];
-        // print json_encode($subFilters, JSON_PRETTY_PRINT);
         $assoc = [];
         $logic = [];
-        foreach ($subFilters as $key => $value) {
+        foreach ($context['filters'] as $key => $value) {
             if (ctype_digit((string) $key)) {
                 // allows the same filter to be applied several times, usually with different arguments
                 $subcontext = $context; //copies
                 $subcontext['filters'] = $value;
-                $this->applyFilters($filters, $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext);
+                $this->applyFilters($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext);
 
                 // apply logic seperately
                 if (isset($value['and'])) {
                     $logic[]['and'] =  $value['and'];
                 }if (isset($value['or'])) {
                     $logic[]['or'] =  $value['or'];
+                }if (isset($value['not'])) {
+                    $logic[]['not'] =  $value['not'];
                 }
-            } elseif (in_array($key, ['and', 'or'])) {
+            } elseif (in_array($key, ['and', 'or', 'not'])) {
                 $logic[][$key] = $value;
             } else {
                 $assoc[$key] = $value;
@@ -113,32 +150,46 @@ class FilterLogic extends AbstractContextAwareFilter
         // Process $assoc
         $subcontext = $context; //copies
         $subcontext['filters'] = $assoc;
-        $this->applyFilters($filters, $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext);
+        $this->applyFilters($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext);
 
         $newWhere = $queryBuilder->getDQLPart('where');
         $queryBuilder->add('where', $oldWhere); //restores old where
 
         // force $operator logic upon $newWhere
         $expressions = $this->getAppliedExpressions($newWhere, $marker);
-        $adaptedPart = $operator == 'and'
-            ? new Expr\Andx($expressions)
-            : new Expr\Orx($expressions);
 
         // Process logic
         foreach ($logic as $eachLogic) {
-            $subcontext = $context; //copies
-            $subcontext['filters'] = $eachLogic;
-            $newWhere = $this->applyLogic($filters, key($eachLogic), $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext);
-            $adaptedPart->add($newWhere); // empty expressions are ignored by ::add
+            $subExpressions = $this->filterProperty(key($eachLogic), current($eachLogic), $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
+            if (key($eachLogic) == 'not') {
+                // NOT expressions are combined by parent logic
+                foreach ($subExpressions as $subExp) {
+                    $expressions[] = new Expr\Func('NOT', [$subExp]);
+                }
+            } else {
+                $expressions[] = key($eachLogic) == 'or'
+                    ? new Expr\Orx($subExpressions)
+                    : new Expr\Andx($subExpressions);
+            }
         }
 
-        return $adaptedPart; // may be empty
+        return $expressions; // may be empty
+    }
+
+    /**
+     * @throws \LogicException if assumption proves wrong
+     */
+    protected function filterProperty(string $property, $value, QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, string $operationName = null, $context=[])
+    {
+        $subcontext = $context; //copies
+        $subcontext['filters'] = $value;
+        return $this->doGenerate($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $subcontext);
     }
 
     /** Calls ::apply on each filter in $filters */
-    private function applyFilters($filters, $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)
+    private function applyFilters($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)
     {
-        foreach ($filters as $filter) {
+        foreach ($this->filters as $filter) {
             $filter->apply($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
         }
     }
@@ -180,10 +231,11 @@ class FilterLogic extends AbstractContextAwareFilter
         return $parts;
     }
 
+
     /**
      * @param string $resourceClass
      * @param string $operationName
-     * @return FilterInterface[] From resource except $this and OrderFilters
+     * @return ContextAwareFilterInterface[] From resource except $this and OrderFilters
      * @throws ResourceClassNotFoundException
      */
     protected function getFilters($resourceClass, $operationName)
@@ -196,7 +248,7 @@ class FilterLogic extends AbstractContextAwareFilter
             $filter = $this->filterLocator->has($filterId)
                 ? $this->filterLocator->get($filterId)
                 :  null;
-            if ($filter instanceof FilterInterface
+            if ($filter instanceof ContextAwareFilterInterface
                 && !($filter instanceof OrderFilter)
                 && $filter !== $this
                 && preg_match($this->classExp, get_class($filter))

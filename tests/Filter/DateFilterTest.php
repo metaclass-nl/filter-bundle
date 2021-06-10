@@ -139,19 +139,24 @@ AND
 
     public function testAdaptedWithFilterLogic()
     {
+        Reflection::setProperty($this->filterLogic, 'filters', [$this->adaptedDateFilter]);
         $operator = 'or';
         $reqData = null;
         parse_str('or[dd][before]=2021-01-01&or[dd][after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [[$this->adaptedDateFilter], $operator, $this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
-        $result = Reflection::callMethod($this->filterLogic, 'applyLogic', $args);
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
+        $this->assertEquals(
+            1,
+            count($result),
+            "number of expressions");
         $this->assertEquals(
             str_replace('
 ', '', "(o.dd IS NOT NULL AND o.dd <= :dd_p1)
  OR (o.dd IS NOT NULL AND o.dd >= :dd_p2)"),
-            (string) $result,
+            (string) $result[0],
             'DQL');
         $this->assertEquals(
             '2021-01-01',
