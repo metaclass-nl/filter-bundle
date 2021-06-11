@@ -1,6 +1,6 @@
 Filter logic for API Platform
 =============================
-Combines existing API Platform ORM Filters with AND and OR according to client request.
+Combines existing API Platform ORM Filters with AND, OR and NOT according to client request.
 - supports nested logic (parentheses)
 - supports multiple criteria for the same property
 - existing requests keep working unmodified if not using "and" or "or" as query parameters
@@ -33,6 +33,19 @@ Callling the collection get operation with:
 ```
 will return all offers with a price being exactly 10 OR a description containing the word "shirt".
 
+NOT expressions are combined like the other expressions trough the compound logic (and, or) they are nested in:  
+```uri
+/offers/?or[not][price]=10&or[not][description]=shirt 
+```
+will return (all offers with a price not being 10) OR (a description NOT containing the word "shirt").
+If they are not nested in compound logic AND is used:
+
+```uri
+/offers/?price=10&not[description]=shirt
+```
+will return all offers with a price being exactly 10 AND a description NOT containing the word "shirt".
+This is different from the other expressions which are combined by the filters themselves.
+
 You can have nested logic and multiple criteria for the same property like this:
 ```uri
 /offers/?and[price]=10&and[or][][description]=shirt&and[or][][description]=cotton
@@ -59,8 +72,13 @@ Then add the bundle to your api config/bundles.php:
 
 Limitations
 -----------
-Works with built in filters of Api Platform, except for DateFilter with EXCLUDE_NULL.
-A DateFilter subclass is provided to correct this.
+Combining filters through OR and nested logic may be a harder task for your
+database and require different indexes. Except for small tables performance
+testing and analysis is advisable prior to deployment.  
+
+Only works with filters implementing ContextAwareFilterInterface, other filters
+are ignoored. Works with built in filters of Api Platform, except for DateFilter 
+with EXCLUDE_NULL. A DateFilter subclass is provided to correct this.
 
 Assumes that filters create semantically complete expressions in the sense that
 expressions added to the QueryBundle through ::andWhere or ::orWhere do not depend
