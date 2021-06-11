@@ -51,7 +51,7 @@ Installation
 ------------
 With composer:
 ```shell
-composer require metaclass-nl/filter-bundle
+composer require metaclass-nl/filter-bundle "dev-master"
 ```
 
 Then add the bundle to your api config/bundles.php:
