@@ -40,9 +40,9 @@ class FilterLogic extends AbstractContextAwareFilter
      * @param $regExp string Filter classes must match this to be applied with logic
      * {@inheritdoc}
      */
-    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, $filterLocator, string $classExp='//', ManagerRegistry $managerRegistry, RequestStack $requestStack=null, LoggerInterface $logger = null, array $properties = null, NameConverterInterface $nameConverter = null)
+    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, $filterLocator, ManagerRegistry $managerRegistry, LoggerInterface $logger = null, array $properties = null, NameConverterInterface $nameConverter = null, string $classExp='//')
     {
-        parent::__construct($managerRegistry, $requestStack, $logger, $properties, $nameConverter);
+        parent::__construct($managerRegistry, null, $logger, $properties, $nameConverter);
         $this->resourceMetadataFactory = $resourceMetadataFactory;
         $this->filterLocator = $filterLocator;
         $this->classExp = $classExp;

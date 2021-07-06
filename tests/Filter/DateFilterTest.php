@@ -45,7 +45,7 @@ class DateFilterTest extends KernelTestCase
         $logger = null;
         $nameConverter = null;
 
-        $this->filterLogic = new FilterLogic($metadataFactory, $filterLocator, '//', $this->doctrine, $requestStack, $logger, []);
+        $this->filterLogic = new FilterLogic($metadataFactory, $filterLocator, $this->doctrine, $logger, []);
         $this->dateFilter = new DateFilter($this->doctrine, $requestStack, $logger, ['dd' => DateFilter::EXCLUDE_NULL]);
         $this->adaptedDateFilter = new AdaptedDateFilter($this->doctrine, $requestStack, $logger, ['dd' => DateFilter::EXCLUDE_NULL]);
     }
