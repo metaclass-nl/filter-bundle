@@ -48,7 +48,7 @@ class FilterLogicTest extends KernelTestCase
         $nameConverter = null;
         $iriConverter = self::$container->get('api_platform.iri_converter');
 
-        $this->filterLogic = new FilterLogic($metadataFactory, $filterLocator, '//', $this->doctrine, $requestStack, $logger, []);
+        $this->filterLogic = new FilterLogic($metadataFactory, $filterLocator, $this->doctrine, $logger, []);
         $this->filters[] = new DateFilter($this->doctrine, $requestStack, $logger, ['dd' => null]);
         $this->filters[] = new NumericFilter($this->doctrine, $requestStack, $logger, ['numb' => null]);
         $this->filters[] = new RangeFilter($this->doctrine, $requestStack, $logger, ['numb' => null]);
