@@ -91,9 +91,10 @@ will only apply API Platform ORM Filters in logic context.
 
 Credits and License
 -------------------
-Copyright (c) [MetaClass](https://www.metaclass.nl/), Groningen, 2021.
+Copyright (c) [MetaClass](https://www.metaclass.nl/), Groningen, 2021. [MetaClass](https://www.metaclass.nl/) offers software development and support in the Netherlands for Symfony, API Platform, React.js and Next.js
 
 [MIT License](./LICENSE).
 
 [API Platform](https://api-platform.com/) is a product of [Les-Tilleuls.coop](https://les-tilleuls.coop)
 created by [Kévin Dunglas](https://dunglas.fr).
+
