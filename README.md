@@ -69,7 +69,11 @@ testing and analysis is advisable prior to deployment.
 
 Only works with filters implementing ContextAwareFilterInterface, other filters
 are ignoored. Works with built in filters of Api Platform, except for DateFilter 
-with EXCLUDE_NULL. A DateFilter subclass is provided to correct this.
+with EXCLUDE_NULL. A DateFilter subclass is provided to correct this. However,
+the built in filters of Api Platform contain a bug with respect to the JOINs 
+they generate, see [this issue](https://github.com/metaclass-nl/filter-bundle/issues/2). 
+As a result, combining them with OR does not work as expected with properties
+nested over to-many and nullable associations.
 
 Assumes that filters create semantically complete expressions in the sense that
 expressions added to the QueryBundle through ::andWhere or ::orWhere do not depend
