@@ -52,8 +52,8 @@ class FilterLogicTest extends KernelTestCase
         $this->filters[] = new DateFilter($this->doctrine, $requestStack, $logger, ['dd' => null]);
         $this->filters[] = new NumericFilter($this->doctrine, $requestStack, $logger, ['numb' => null]);
         $this->filters[] = new RangeFilter($this->doctrine, $requestStack, $logger, ['numb' => null]);
-        $this->filters[] = new SearchFilter($this->doctrine, $requestStack, $iriConverter, null, $logger, ['text' => null], null, $nameConverter);
-        $this->filters[] = new ExistsFilter($this->doctrine, $requestStack, $logger, ['bool' => null, 'dd' => null]);
+        $this->filters[] = new SearchFilter($this->doctrine, $requestStack, $iriConverter, null, $logger, ['text' => null, 'toOneNullable.text'=>'start', 'toMany.text'=>'exact'], null, $nameConverter);
+        $this->filters[] = new ExistsFilter($this->doctrine, $requestStack, $logger, ['bool' => null, 'dd' => null, 'toOneNullable.dd'=>null, 'toMany.bool'=>null]);
         $this->filters[] = new BooleanFilter($this->doctrine, $requestStack, $logger, ['bool' => null]);
         $this->filters[] = new FilterToTestAssumptions();
         Reflection::setProperty($this->filterLogic, 'filters', $this->filters);
@@ -258,7 +258,7 @@ class FilterLogicTest extends KernelTestCase
     {
         $operator = 'or';
         $reqData = null;
-        parse_str('or[][numb]=55&or[][numb]=2.7', $reqData);
+        parse_str('or[][text]=Foo&or[][text]=Bar', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
         $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
@@ -266,23 +266,23 @@ class FilterLogicTest extends KernelTestCase
 
         $this->assertEquals(1, count($result), 'number of expressions');
         $this->assertEquals(
-            "o.numb = :numb_p1 OR o.numb = :numb_p2",
+            "o.text = :text_p1 OR o.text = :text_p2",
             $result[0],
             'expression 0');
         $this->assertEquals(
-            55,
-            $this->qb->getParameter('numb_p1')->getValue(),
-            'Parameter numb_p1');
+            'Foo',
+            $this->qb->getParameter('text_p1')->getValue(),
+            'Parameter text_p1');
         $this->assertEquals(
-            2.7,
-            $this->qb->getParameter('numb_p2')->getValue(),
-            'Parameter numb_p2');
+            'Bar',
+            $this->qb->getParameter('text_p2')->getValue(),
+            'Parameter text_p2');
     }
 
     public function testNotWithSearchFilter()
     {
         $reqData = null;
-        parse_str('not[][numb]=55&not[][numb]=2.7', $reqData);
+        parse_str('not[][text]=Foo&not[][text]=Bar', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
         $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
@@ -290,21 +290,21 @@ class FilterLogicTest extends KernelTestCase
 
         $this->assertEquals(2, count($result), 'number of expressions');
         $this->assertEquals(
-            "NOT(o.numb = :numb_p1)",
+            "NOT(o.text = :text_p1)",
             (string) $result[0],
             'expression 0');
         $this->assertEquals(
-            "NOT(o.numb = :numb_p2)",
+            "NOT(o.text = :text_p2)",
             (string) $result[1],
             'expression 1');
         $this->assertEquals(
-            55,
-            $this->qb->getParameter('numb_p1')->getValue(),
-            'Parameter numb_p1');
+            'Foo',
+            $this->qb->getParameter('text_p1')->getValue(),
+            'Parameter text_p1');
         $this->assertEquals(
-            2.7,
-            $this->qb->getParameter('numb_p2')->getValue(),
-            'Parameter numb_p2');
+            'Bar',
+            $this->qb->getParameter('text_p2')->getValue(),
+            'Parameter text_p2');
     }
 
     public function testOrNotWithSearchFilter()
@@ -437,4 +437,64 @@ class FilterLogicTest extends KernelTestCase
         $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
     }
+
+    public function testInnerJoinsLeftWithSearchFilter()
+    {
+        $reqData = null;
+        parse_str('and[][toMany.text]=Foo&and[][toOneNullable.text]=Bar', $reqData);
+        // var_dump($reqData);
+        $context = ['filters' => $reqData];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
+
+        $this->assertEquals(1, count($result), 'number of expressions');
+        $this->assertEquals(
+            "toMany_a1.text = :text_p1 AND toOneNullable_a2.text LIKE CONCAT(:text_p2_0, '%')",
+            (string) $result[0],
+            'expression 0');
+        $this->assertEquals(
+            'Foo',
+            $this->qb->getParameter('text_p1')->getValue(),
+            'Parameter text_p1');
+        $this->assertEquals(
+            'Bar',
+            $this->qb->getParameter('text_p2_0')->getValue(),
+            'Parameter text_p2_0');
+
+        $this->assertEquals(
+            'SELECT o FROM Metaclass\FilterBundle\Entity\TestEntity o INNER JOIN o.toMany toMany_a1 INNER JOIN o.toOneNullable toOneNullable_a2',
+            $this->qb->getDQL(),
+            'DQL before replaceInnerJoinsByLeftJoins'
+        );
+        Reflection::callMethod(
+            $this->filterLogic,
+            'replaceInnerJoinsByLeftJoins',
+            [$this->qb]);
+        $this->assertEquals(
+            'SELECT o FROM Metaclass\FilterBundle\Entity\TestEntity o LEFT JOIN o.toMany toMany_a1 LEFT JOIN o.toOneNullable toOneNullable_a2',
+            $this->qb->getDQL(),
+            'DQL after replaceInnerJoinsByLeftJoins'
+        );
+    }
+
+    public function testInnerJoinsLeftWithExistsFilter()
+    {
+        $operator = 'or';
+        $reqData = null;
+        parse_str('or[exists][toMany.bool]=true&or[exists][toOneNullable.dd]=false', $reqData);
+        // var_dump($reqData);
+        $context = ['filters' => $reqData];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
+
+        $this->assertEquals(1, count($result), 'number of expressions');
+        $this->assertEquals(
+            str_replace('
+', '', "toMany_a1.bool IS NOT NULL OR toOneNullable_a2.dd IS NULL"),
+            (string) $result[0],
+            'DQL');
+    }
+
+
+    #TODO: add tests for Exists filter with nested prop
 }

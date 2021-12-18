@@ -6,6 +6,17 @@ namespace Metaclass\FilterBundle\Tests\Utils;
 class Reflection
 {
     /** @throws \ReflectionException */
+    public static function getProperty($objectOrClass, $name)
+    {
+        $rp = new \ReflectionProperty($objectOrClass, $name);
+        $rp->setAccessible(true);
+
+        return is_string($objectOrClass)
+            ? $rp->getValue()
+            : $rp->getValue($objectOrClass);
+    }
+
+    /** @throws \ReflectionException */
     public static function setProperty($objectOrClass, $name, $value)
     {
         $rp = new \ReflectionProperty($objectOrClass, $name);

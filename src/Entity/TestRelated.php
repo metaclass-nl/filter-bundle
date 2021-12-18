@@ -3,17 +3,15 @@
 
 namespace Metaclass\FilterBundle\Entity;
 
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Class TestEntity
+ * Class TestRelated
  * @package Metaclass\FilterBundle\Entity
  * @ORM\Entity
  */
-class TestEntity
+class TestRelated
 {
-
     /**
      * @var int The entity Id
      *
@@ -38,7 +36,7 @@ class TestEntity
     /**
      * @var \DateTime|null
      * @ORM\Column(type="date", nullable=true)
-    */
+     */
     public $dd;
 
     /**
@@ -48,14 +46,9 @@ class TestEntity
     public $bool;
 
     /**
-     * @var TestRelated
-     * @ORM\ManyToOne(targetEntity="Metaclass\FilterBundle\Entity\TestRelated", inversedBy="toMany")
+     * @var TestEntity
+     * @ORM\ManyToOne(targetEntity="Metaclass\FilterBundle\Entity\TestEntity", inversedBy="toMany")
+     * @ORM\JoinColumn(referencedColumnName="id", nullable=false)
      */
-    public $toOneNullable;
-
-    /**
-     * @var Collection
-     * @ORM\OneToMany(targetEntity="Metaclass\FilterBundle\Entity\TestRelated", mappedBy="project")
-     */
-    public $toMany;
+    public $testEntity;
 }

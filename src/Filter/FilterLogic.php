@@ -5,7 +5,6 @@ namespace Metaclass\FilterBundle\Filter;
 use ApiPlatform\Core\Api\FilterCollection;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\AbstractContextAwareFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\ContextAwareFilterInterface;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\FilterInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\OrderFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGeneratorInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
@@ -15,12 +14,16 @@ use Doctrine\ORM\Query\Expr;
 use Doctrine\Persistence\ManagerRegistry;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
+use Doctrine\ORM\Query\Expr\Join;
 
 /**
  * Combines existing API Platform ORM Filters with AND and OR.
  * For usage and limitations see https://gist.github.com/metaclass-nl/790a5c8e9064f031db7d3379cc47c794
+ * WARNING: $innerJoinsLeft=true changes the behavior of ExistsFilter =false,
+ * and though it makes it more like one would expect given the semantics of its name,
+ * it does break backward compatibility.
+ *
  * Copyright (c) MetaClass, Groningen, 2021. MIT License
  */
 class FilterLogic extends AbstractContextAwareFilter
@@ -33,19 +36,25 @@ class FilterLogic extends AbstractContextAwareFilter
     private $classExp;
     /** @var ContextAwareFilterInterface[] */
     private $filters;
+    /** @var bool Wheather to replace all inner joins by left joins */
+    private $innerJoinsLeft;
 
     /**
      * @param ResourceMetadataFactoryInterface $resourceMetadataFactory
      * @param ContainerInterface|FilterCollection $filterLocator
      * @param $regExp string Filter classes must match this to be applied with logic
+     * @param $innerJoinsLeft bool Wheather to replace all inner joins by left joins.
+     *   This makes the standard Api Platform filters combine properly with OR,
+     *   but also changes the behavior of ExistsFilter =false.
      * {@inheritdoc}
      */
-    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, $filterLocator, ManagerRegistry $managerRegistry, LoggerInterface $logger = null, array $properties = null, NameConverterInterface $nameConverter = null, string $classExp='//')
+    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, $filterLocator, ManagerRegistry $managerRegistry, LoggerInterface $logger = null, array $properties = null, NameConverterInterface $nameConverter = null, string $classExp='//', $innerJoinsLeft=false)
     {
         parent::__construct($managerRegistry, null, $logger, $properties, $nameConverter);
         $this->resourceMetadataFactory = $resourceMetadataFactory;
         $this->filterLocator = $filterLocator;
         $this->classExp = $classExp;
+        $this->innerJoinsLeft = $innerJoinsLeft;
     }
 
     /** {@inheritdoc } */
@@ -65,6 +74,7 @@ class FilterLogic extends AbstractContextAwareFilter
         if (!isset($context['filters']) || !\is_array($context['filters'])) {
             throw new \InvalidArgumentException('::apply without $context[filters] not supported');
         }
+
         $this->filters = $this->getFilters($resourceClass, $operationName);
 
         if (isset($context['filters']['and']) ) {
@@ -85,6 +95,10 @@ class FilterLogic extends AbstractContextAwareFilter
             foreach($expressions as $exp) {
                 $queryBuilder->orWhere($exp);
             };
+        }
+
+        if ($this->innerJoinsLeft) {
+            $this->replaceInnerJoinsByLeftJoins($queryBuilder);
         }
     }
 
@@ -257,5 +271,35 @@ class FilterLogic extends AbstractContextAwareFilter
             }
         }
         return $result;
+    }
+
+    /**
+     * The filters that come standard with Api Platform create inner joins,
+     * but for nullable and to many references we need Left Joins for OR
+     * to also produce results that are not related.
+     * WARNING: This changes the behavior of ExistsFilter =false, consider
+     * using ExistFilter included in this bundle instead.
+     * @param QueryBuilder $queryBuilder
+     */
+    protected function replaceInnerJoinsByLeftJoins(QueryBuilder $queryBuilder) {
+        $joinPart = $queryBuilder->getDQLPart('join');
+        $result = [];
+        foreach ($joinPart as $rootAlias => $joins) {
+            foreach ($joins as $i => $joinExp) {
+                if (Join::INNER_JOIN === $joinExp->getJoinType()) {
+                    $result[$rootAlias][$i] = new Join(
+                        Join::LEFT_JOIN,
+                        $joinExp->getJoin(),
+                        $joinExp->getAlias(),
+                        $joinExp->getConditionType(),
+                        $joinExp->getCondition(),
+                        $joinExp->getIndexBy()
+                      );
+                } else {
+                    $result[$rootAlias][$i] = $joinExp;
+                }
+            }
+        }
+        $queryBuilder->add('join', $result);
     }
 }
