@@ -47,12 +47,13 @@ class FilterLogicTest extends KernelTestCase
         $logger = null;
         $nameConverter = null;
         $iriConverter = self::$container->get('api_platform.iri_converter');
+        $identifiersExtractor = self::$container->get('api_platform.identifiers_extractor');
 
         $this->filterLogic = new FilterLogic($metadataFactory, $filterLocator, $this->doctrine, $logger, []);
         $this->filters[] = new DateFilter($this->doctrine, $requestStack, $logger, ['dd' => null]);
         $this->filters[] = new NumericFilter($this->doctrine, $requestStack, $logger, ['numb' => null]);
         $this->filters[] = new RangeFilter($this->doctrine, $requestStack, $logger, ['numb' => null]);
-        $this->filters[] = new SearchFilter($this->doctrine, $requestStack, $iriConverter, null, $logger, ['text' => null, 'toOneNullable.text'=>'start', 'toMany.text'=>'exact'], null, $nameConverter);
+        $this->filters[] = new SearchFilter($this->doctrine, $requestStack, $iriConverter, null, $logger, ['text' => null, 'toOneNullable.text'=>'start', 'toMany.text'=>'exact'], $identifiersExtractor, $nameConverter);
         $this->filters[] = new ExistsFilter($this->doctrine, $requestStack, $logger, ['bool' => null, 'dd' => null, 'toOneNullable.dd'=>null, 'toMany.bool'=>null]);
         $this->filters[] = new BooleanFilter($this->doctrine, $requestStack, $logger, ['bool' => null]);
         $this->filters[] = new FilterToTestAssumptions();
