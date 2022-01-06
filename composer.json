@@ -13,8 +13,9 @@
     "minimum-stability": "dev",
     "require": {
         "php": ">=7.2.5",
-        "symfony/http-kernel": "^4.4 || ^5.1",
-        "api-platform/core": "^2.5"
+        "symfony/http-kernel": "^4.4 || ^5.1 || ^6.0",
+        "api-platform/core": "^2.5",
+        "doctrine/orm": "^2.0"
     },
     "require-dev": {
     },
