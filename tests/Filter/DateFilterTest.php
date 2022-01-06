@@ -1,9 +1,8 @@
 <?php
 
-
 namespace Metaclass\FilterBundle\Tests\Filter;
 
-
+use ApiPlatform\Core\Bridge\Doctrine\Common\Filter\DateFilterInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use ApiPlatform\Core\Api\FilterInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\DateFilter;
@@ -30,27 +29,27 @@ class DateFilterTest extends KernelTestCase
     /** @var FilterLogic */
     private $filterLogic;
 
-    public function setUp()
+    public function setUp(): void
     {
         self::bootKernel();
 
-        $this->doctrine =  self::$container->get('doctrine');
+        $this->doctrine = static::getContainer()->get('doctrine');
         $this->repo = $this->doctrine->getRepository(TestEntity::class);
         $this->qb = $this->repo->createQueryBuilder('o');
         $this->queryNameGen = new QueryNameGenerator();
 
-        $metadataFactory = self::$container->get('api_platform.metadata.resource.metadata_factory');
-        $filterLocator = self::$container->get('api_platform.filter_locator');
+        $metadataFactory = static::getContainer()->get('api_platform.metadata.resource.metadata_factory');
+        $filterLocator = static::getContainer()->get('api_platform.filter_locator');
         $requestStack = null;
         $logger = null;
         $nameConverter = null;
 
         $this->filterLogic = new FilterLogic($metadataFactory, $filterLocator, $this->doctrine, $logger, []);
-        $this->dateFilter = new DateFilter($this->doctrine, $requestStack, $logger, ['dd' => DateFilter::EXCLUDE_NULL]);
-        $this->adaptedDateFilter = new AdaptedDateFilter($this->doctrine, $requestStack, $logger, ['dd' => DateFilter::EXCLUDE_NULL]);
+        $this->dateFilter = new DateFilter($this->doctrine, $requestStack, $logger, ['dd' => DateFilterInterface::EXCLUDE_NULL]);
+        $this->adaptedDateFilter = new AdaptedDateFilter($this->doctrine, $requestStack, $logger, ['dd' => DateFilterInterface::EXCLUDE_NULL]);
     }
 
-    public function testExcludeNull()
+    public function testExcludeNull(): void
     {
         $reqData = null;
         parse_str('dd[before]=2021-01-01&dd[after]=2021-03-03', $reqData);
@@ -93,7 +92,7 @@ AND
  */
     }
 
-    public function testNoNullManagement()
+    public function testNoNullManagement(): void
     {
         $reqData = null;
         parse_str('dd[strictly_before]=2021-01-01&dd[after]=2021-03-03', $reqData);
@@ -115,17 +114,17 @@ AND
         );
     }
 
-    public function testIncludeNullAfter()
+    public function testIncludeNullAfter(): void
     {
         $reqData = null;
         parse_str('dd[before]=2021-01-01&dd[strictly_after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
 
-        $dateFilter = new DateFilter($this->doctrine, null, null, ['dd' => DateFilter::INCLUDE_NULL_AFTER]);
+        $dateFilter = new DateFilter($this->doctrine, null, null, ['dd' => DateFilterInterface::INCLUDE_NULL_AFTER]);
         $dateFilter->apply($this->qb, $this->queryNameGen, TestEntity::class, 'get', $context);
 
-        $adaptedDateFilter = new AdaptedDateFilter($this->doctrine, null, null, ['dd' => DateFilter::INCLUDE_NULL_AFTER]);
+        $adaptedDateFilter = new AdaptedDateFilter($this->doctrine, null, null, ['dd' => DateFilterInterface::INCLUDE_NULL_AFTER]);
         $qb2 = $this->repo->createQueryBuilder('o');
         $qng2 = new QueryNameGenerator();
         $adaptedDateFilter->apply($qb2, $qng2, TestEntity::class, 'get', $context);
@@ -137,7 +136,7 @@ AND
         );
     }
 
-    public function testAdaptedWithFilterLogic()
+    public function testAdaptedWithFilterLogic(): void
     {
         Reflection::setProperty($this->filterLogic, 'filters', [$this->adaptedDateFilter]);
         $operator = 'or';
@@ -148,9 +147,9 @@ AND
         $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
-        $this->assertEquals(
+        $this->assertCount(
             1,
-            count($result),
+            $result,
             "number of expressions");
         $this->assertEquals(
             str_replace('

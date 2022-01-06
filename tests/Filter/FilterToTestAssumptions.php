@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Metaclass\FilterBundle\Tests\Filter;
-
 
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\AbstractContextAwareFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\ContextAwareFilterInterface;
@@ -14,10 +12,11 @@ class FilterToTestAssumptions implements ContextAwareFilterInterface
 {
     public function getDescription(string $resourceClass): array
     {
-
+     # TODO implement
+     return [];
     }
 
-    public function apply(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, string $operationName = null, array $context = [])
+    public function apply(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, string $operationName = null, array $context = []): void
     {
         if (isset($context['filters']['setWhere'])) {
             $field = key($context['filters']['setWhere']);

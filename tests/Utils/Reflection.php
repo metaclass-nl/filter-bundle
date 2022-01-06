@@ -2,7 +2,6 @@
 
 namespace Metaclass\FilterBundle\Tests\Utils;
 
-
 class Reflection
 {
     /** @throws \ReflectionException */
@@ -17,7 +16,7 @@ class Reflection
     }
 
     /** @throws \ReflectionException */
-    public static function setProperty($objectOrClass, $name, $value)
+    public static function setProperty($objectOrClass, $name, $value): void
     {
         $rp = new \ReflectionProperty($objectOrClass, $name);
         $rp->setAccessible(true);

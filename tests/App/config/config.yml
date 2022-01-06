@@ -1,0 +1,30 @@
+api_platform:
+  enable_docs: false
+
+framework:
+  secret: ThisIsSecret
+  test: true
+  router:
+    utf8: true
+
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: true
+
+  'metaclass_filter_bundle.filter.filter_logic':
+    class: 'Metaclass\FilterBundle\Filter\FilterLogic'
+    arguments:
+      - '@api_platform.metadata.resource.metadata_factory'
+      - '@api_platform.filter_locator'
+    public: false
+    abstract: true
+    autoconfigure: false
+
+  'Metaclass\FilterBundle\Filter\FilterLogic':
+      '@metaclass_filter_bundle.filter.filter_logic'
+
+  #Metaclass\FilterBundle\Tests\App\src\:
+    #resource: '%kernel.project_dir%/src'
+    #exclude: '%kernel.project_dir%/src/{Dto,Entity}'

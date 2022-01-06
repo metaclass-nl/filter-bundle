@@ -44,8 +44,8 @@ You can have nested logic and multiple criteria for the same property like this:
 ```
 The api will return all offers with a price being exactly 10 AND (a description containing the word "shirt" OR the word "cotton").
 Because of the nesting of or the criteria for the description are combined together through
-AND with the criterium for price, which must allways be true while only one of the
-criteria for the desciption needs to be true for an order to be returned.
+AND with the criterium for price, which must always be true while only one of the
+criteria for the description needs to be true for an order to be returned.
 
 You can in/exclude filters by class name by configuring classExp. For example:
 ```php docblock

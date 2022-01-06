@@ -13,10 +13,16 @@
     "minimum-stability": "dev",
     "require": {
         "php": ">=7.2.5",
-        "symfony/http-kernel": "^4.4 || ^5.1",
-        "api-platform/core": "^2.5"
+        "symfony/http-kernel": "^4.4 || ^5.1 || ^6.0",
+        "api-platform/core": "^2.5",
+        "doctrine/orm": "^2.0"
     },
     "require-dev": {
+        "doctrine/doctrine-bundle": "^2.5",
+        "phpunit/phpunit": "^8.5|^9.5",
+        "symfony/phpunit-bridge": "^5.4|^6.0",
+        "symfony/framework-bundle": "^5.4 || ^6.0",
+        "symfony/yaml": "^5.4 || ^6.0"
     },
     "suggest": {
     },
@@ -25,7 +31,12 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Metaclass\\LogicalFilterBundle\\Tests\\": "tests/"
+            "Metaclass\\FilterBundle\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/package-versions-deprecated": true
         }
     }
 }
