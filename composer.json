@@ -28,10 +28,5 @@
         "psr-4": {
             "Metaclass\\LogicalFilterBundle\\Tests\\": "tests/"
         }
-    },
-    "config": {
-        "allow-plugins": {
-            "composer/package-versions-deprecated": false
-        }
     }
 }
