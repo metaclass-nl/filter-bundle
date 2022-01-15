@@ -5,15 +5,29 @@ namespace Metaclass\FilterBundle\Entity;
 
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use ApiPlatform\Core\Annotation\ApiResource;
+use ApiPlatform\Core\Annotation\ApiFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\DateFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\ExistsFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\SearchFilter;
+use Metaclass\FilterBundle\Filter\FilterLogic;
+use Metaclass\FilterBundle\Filter\AddFakeLeftJoin;
+use Metaclass\FilterBundle\Filter\RemoveFakeLeftJoin;
 
 /**
  * Class TestEntity
  * @package Metaclass\FilterBundle\Entity
  * @ORM\Entity
+ * @ApiResource
+ * @ApiFilter(DateFilter::class, properties={"dd": DateFilter::INCLUDE_NULL_AFTER})
+ * @ApiFilter(ExistsFilter::class, properties={"dd", "bool", "toMany.bool"})
+ * @ApiFilter(AddFakeLeftJoin::class)
+ * @ApiFilter(SearchFilter::class, properties={"toMany.text"})
+ * @ApiFilter(FilterLogic::class, arguments={"innerJoinsLeft"=true})
+ * @ApiFilter(RemoveFakeLeftJoin::class)
  */
 class TestEntity
 {
-
     /**
      * @var int The entity Id
      *

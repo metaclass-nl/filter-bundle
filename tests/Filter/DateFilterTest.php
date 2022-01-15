@@ -30,17 +30,18 @@ class DateFilterTest extends KernelTestCase
     /** @var FilterLogic */
     private $filterLogic;
 
-    public function setUp()
+    public function setUp(): void
     {
-        self::bootKernel();
+        $kernel = static::bootKernel();
+        $container = $kernel->getContainer();
 
-        $this->doctrine =  self::$container->get('doctrine');
+        $this->doctrine =  $container->get('doctrine');
         $this->repo = $this->doctrine->getRepository(TestEntity::class);
         $this->qb = $this->repo->createQueryBuilder('o');
         $this->queryNameGen = new QueryNameGenerator();
 
-        $metadataFactory = self::$container->get('api_platform.metadata.resource.metadata_factory');
-        $filterLocator = self::$container->get('api_platform.filter_locator');
+        $metadataFactory = $container->get('test.api_platform.metadata.resource.metadata_factory');
+        $filterLocator = $container->get('test.api_platform.filter_locator');
         $requestStack = null;
         $logger = null;
         $nameConverter = null;
