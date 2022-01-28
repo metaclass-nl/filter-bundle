@@ -7,6 +7,7 @@ namespace Metaclass\FilterBundle\Tests\Filter;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use ApiPlatform\Core\Api\FilterInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\DateFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Common\Filter\DateFilterInterface;
 use Metaclass\FilterBundle\Filter\DateFilter as AdaptedDateFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGenerator;
 use Doctrine\Persistence\ManagerRegistry;
@@ -47,8 +48,8 @@ class DateFilterTest extends KernelTestCase
         $nameConverter = null;
 
         $this->filterLogic = new FilterLogic($metadataFactory, $filterLocator, $this->doctrine, $logger, []);
-        $this->dateFilter = new DateFilter($this->doctrine, $requestStack, $logger, ['dd' => DateFilter::EXCLUDE_NULL]);
-        $this->adaptedDateFilter = new AdaptedDateFilter($this->doctrine, $requestStack, $logger, ['dd' => DateFilter::EXCLUDE_NULL]);
+        $this->dateFilter = new DateFilter($this->doctrine, $requestStack, $logger, ['dd' => DateFilterInterface::EXCLUDE_NULL]);
+        $this->adaptedDateFilter = new AdaptedDateFilter($this->doctrine, $requestStack, $logger, ['dd' => DateFilterInterface::EXCLUDE_NULL]);
     }
 
     public function testExcludeNull()
@@ -123,10 +124,10 @@ AND
         // var_dump($reqData);
         $context = ['filters' => $reqData];
 
-        $dateFilter = new DateFilter($this->doctrine, null, null, ['dd' => DateFilter::INCLUDE_NULL_AFTER]);
+        $dateFilter = new DateFilter($this->doctrine, null, null, ['dd' => DateFilterInterface::INCLUDE_NULL_AFTER]);
         $dateFilter->apply($this->qb, $this->queryNameGen, TestEntity::class, 'get', $context);
 
-        $adaptedDateFilter = new AdaptedDateFilter($this->doctrine, null, null, ['dd' => DateFilter::INCLUDE_NULL_AFTER]);
+        $adaptedDateFilter = new AdaptedDateFilter($this->doctrine, null, null, ['dd' => DateFilterInterface::INCLUDE_NULL_AFTER]);
         $qb2 = $this->repo->createQueryBuilder('o');
         $qng2 = new QueryNameGenerator();
         $adaptedDateFilter->apply($qb2, $qng2, TestEntity::class, 'get', $context);

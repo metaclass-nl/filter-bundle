@@ -8,6 +8,7 @@ use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Core\Annotation\ApiResource;
 use ApiPlatform\Core\Annotation\ApiFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\DateFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Common\Filter\DateFilterInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\ExistsFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\SearchFilter;
 use Metaclass\FilterBundle\Filter\FilterLogic;
@@ -19,7 +20,7 @@ use Metaclass\FilterBundle\Filter\RemoveFakeLeftJoin;
  * @package Metaclass\FilterBundle\Entity
  * @ORM\Entity
  * @ApiResource
- * @ApiFilter(DateFilter::class, properties={"dd": DateFilter::INCLUDE_NULL_AFTER})
+ * @ApiFilter(DateFilter::class, properties={"dd": DateFilterInterface::INCLUDE_NULL_AFTER})
  * @ApiFilter(ExistsFilter::class, properties={"dd", "bool", "toMany.bool"})
  * @ApiFilter(AddFakeLeftJoin::class)
  * @ApiFilter(SearchFilter::class, properties={"toMany.text"})
