@@ -1,10 +1,12 @@
 Filter logic for API Platform
 =============================
-Combines existing API Platform ORM Filters with AND, OR and NOT according to client request.
-- supports nested logic (parentheses)
+Combines API Platform ORM Filters with AND, OR and NOT according to client request.
+- supports nested logic (like parentheses in SQL)
 - supports multiple criteria for the same property
 - existing requests keep working unmodified if not using "and", "or" or "not" as query parameters
-
+- works with built in filters of Api Platform, except for DateFilter
+  with EXCLUDE_NULL. A DateFilter subclass is provided to correct this.
+  
 Usage
 -----
 Once the FilterLogic class and service configuration have been installed in you app,
@@ -120,26 +122,31 @@ Combining filters through OR and nested logic may be a harder task for your
 database and require different indexes. Except for small tables performance
 testing and analysis is advisable prior to deployment.  
 
-Works with built in filters of Api Platform, except for DateFilter 
-with EXCLUDE_NULL. A DateFilter subclass is provided to correct this. However,
-the built in filters of Api Platform IMHO contain a bug with respect to the JOINs 
-they generate. 
-As a result, combining them with OR does not work as expected with properties
+The built in filters of Api Platform IMHO contain a bug with respect to the JOINs 
+they generate. As a result, combining them with OR does not work as expected with properties
 nested over to-many and nullable associations. Workarounds are provided, but they
 do change the behavior of ExistsFilter =false.
-
-Assumes that filters create semantically complete expressions in the sense that
-expressions added to the QueryBundle through ::andWhere or ::orWhere do not depend
-on one another so that the intended logic is not compromised if they are recombined
-with the others by either Doctrine\ORM\Query\Expr\Andx or Doctrine\ORM\Query\Expr\Orx.
 
 Only works with filters implementing ContextAwareFilterInterface, other filters
 are ignoored.
 
-May Fail if a filter uses QueryBuilder::where or ::add. You are advised to check the code of all custom and third party Filters and
+Assumes that filters create <b>semantically complete expressions</b> in the sense that
+expressions added to the QueryBuilder through ::andWhere or ::orWhere do not depend
+on one another so that the intended logic is not compromised if they are recombined
+with the others by either Doctrine\ORM\Query\Expr\Andx or Doctrine\ORM\Query\Expr\Orx.
+
+May Fail if a filter or extension uses QueryBuilder::where or ::add. 
+
+You are advised to check the code of all custom and third party Filters and
 not to combine those that use QueryBuilder::where or ::add with FilterLogic
 or that produce complex logic that is not semantically complete. For an
 example of semantically complete and incomplete expressions see [DateFilterTest](./tests/Filter/DateFilterTest.php).
+
+Be aware that new features added to existing filters (From API Platform or third parties)
+may make them create semantically incomplete expressions or use ::where or ::add giving <b>unexpected results
+or incorrect SQL when combined through FilterLogic</b>. Semantic versioning only requires minor new versions
+for new features, so <b>given the composer.json of this package composer will install them unless you
+limit those packages to the minor versions you have tested with</b>.
 
 Credits and License
 -------------------
