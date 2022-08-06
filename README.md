@@ -6,7 +6,12 @@ Combines API Platform ORM Filters with AND, OR and NOT according to client reque
 - existing requests keep working unmodified if not using "and", "or" or "not" as query parameters
 - works with built in filters of Api Platform, except for DateFilter
   with EXCLUDE_NULL. A DateFilter subclass is provided to correct this.
-  
+
+SECURIY WARNING: The current version of LogicFilter allows clients 
+to bypass criteria set by custom Extensions to limit their access to certain data,
+like the examples do in the docs on [Custom Doctrine ORM Extension](https://api-platform.com/docs/core/extensions/#custom-doctrine-orm-extension) 
+see [Issue 10](https://github.com/metaclass-nl/filter-bundle/issues/10).
+
 Usage
 -----
 Once the FilterLogic class and service configuration have been installed in you app,
