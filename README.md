@@ -3,14 +3,12 @@ Filter logic for API Platform
 Combines API Platform ORM Filters with AND, OR and NOT according to client request.
 - supports nested logic (like parentheses in SQL)
 - supports multiple criteria for the same property
-- existing requests keep working unmodified if not using "and", "or" or "not" as query parameters
+- existing requests keep working unmodified if not using "and", "or" or "not" as query parameters.
 - works with built in filters of Api Platform, except for DateFilter
   with EXCLUDE_NULL. A DateFilter subclass is provided to correct this.
-
-SECURIY WARNING: The current version of LogicFilter allows clients 
-to bypass criteria set by custom Extensions to limit their access to certain data,
-like the examples do in the docs on [Custom Doctrine ORM Extension](https://api-platform.com/docs/core/extensions/#custom-doctrine-orm-extension) 
-see [Issue 10](https://github.com/metaclass-nl/filter-bundle/issues/10).
+- For security reasons as of version 2.0 criteria from extensions and filters that
+  are not nested in "and", "or" or "not" are allways combined through AND with the criteria  
+  added by LogicFilter
 
 Usage
 -----
@@ -39,20 +37,41 @@ NOT expressions are combined like the other expressions trough the compound logi
 will return (all offers with a price not being 10) OR (a description NOT containing the word "shirt").
 If they are not nested in compound logic AND is used:
 
+You can have nested logic and multiple criteria for the same property like this:
+```uri
+/offers/?and[price]=10&and[][description]=shirt&and[][description]=cotton
+```
+The api will return all offers with a price being exactly 10 AND 
+(a description containing the word "shirt" AND the word "cotton").
+
+Expressions that are nested in "and", "or" or "not" are allways combined with normal 
+expressions by AND. For example:
 ```uri
 /offers/?price=10&not[description]=shirt
 ```
 will return all offers with a price being exactly 10 AND a description NOT containing the word "shirt".
-This is different from the other expressions which are combined by the filters themselves.
 
-You can have nested logic and multiple criteria for the same property like this:
+```uri
+/offers/?price=10&or[][description]=shirt&or[][description]=cotton
+```
+will return all offers with a price being exactly 10 AND
+(a description containing the word "shirt" OR the word "cotton").
+So this is the same as:
 ```uri
 /offers/?and[price]=10&and[or][][description]=shirt&and[or][][description]=cotton
 ```
-The api will return all offers with a price being exactly 10 AND (a description containing the word "shirt" OR the word "cotton").
-Because of the nesting of or the criteria for the description are combined together through
-AND with the criterium for price, which must allways be true while only one of the
-criteria for the desciption needs to be true for an order to be returned.
+This may be counterintuitive but it is necessary because the querybuilder may also contain
+expressons from extensions that limit access to the data for security and if those
+are combined through OR they can be bypassed by the client.
+
+If you want them to be combined by or, move them to be nested in "or":
+```uri
+/offers/?or[price]=10&or[][description]=shirt&or[][description]=cotton
+```
+The api will then return all offers with a price being exactly 10 
+OR a description containing the word "shirt" 
+OR a description containing the word "cotton".
+
 
 You can in/exclude filters by class name by configuring classExp. For example:
 ```php docblock
@@ -76,6 +95,7 @@ Then add the bundle to your api config/bundles.php:
 
 Nested properties workaround
 ----------------------------
+
 The built-in filters of Api Platform normally generate INNER JOINs. As a result
 combining them with OR may not produce results as expected for properties
 nested over nullable and to many associations, , see [this issue](https://github.com/metaclass-nl/filter-bundle/issues/2).
@@ -89,6 +109,8 @@ class Article {
 // ...
 }
 ```
+<b>SECURITY WARNING</b>: do not use this option if the working of any of the extionsions 
+you use relies on INNER JOINS selecting only rows with NOT NULL values!
 
 In case you do not like FilterLogic messing with the joins you can make
 the built-in filters of Api Platform generate left joins themselves by first adding
@@ -103,6 +125,12 @@ class Article {
 // ...
 }
 ```
+<b>SECURITY WARNING</b>: Extensions that use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryBuilderHelper::addJoinOnce
+or ApiPlatform\Core\Bridge\Doctrine\Orm\PropertyHelperTrait::addJoinsForNestedProperty
+may not have been intended to generate left joins instead of inner joins. Of course this would
+technically be their error, not yours, but still it is better to prevent an eventual breach of security
+then having to deal with the consequences.
+
 
 With one fo these workarounds the following will find Articles whose title contains 'pro'
 as well as those whose keywords contain one whose word is 'php'.

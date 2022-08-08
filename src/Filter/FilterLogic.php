@@ -90,11 +90,10 @@ class FilterLogic extends AbstractContextAwareFilter
                 $queryBuilder->andWhere(new Expr\Func('NOT', [$exp]));
             };
         }
+        #Issue 10: for security allways AND with existing criteria
         if (isset($context['filters']['or'])) {
             $expressions = $this->filterProperty('or', $context['filters']['or'], $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
-            foreach($expressions as $exp) {
-                $queryBuilder->orWhere($exp);
-            };
+            $queryBuilder->andWhere(new Expr\Orx($expressions));
         }
 
         if ($this->innerJoinsLeft) {
