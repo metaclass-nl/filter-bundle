@@ -6,6 +6,7 @@ use ApiPlatform\Core\Api\FilterCollection;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\AbstractContextAwareFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\ContextAwareFilterInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\OrderFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGenerator;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGeneratorInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Exception\ResourceClassNotFoundException;
@@ -77,32 +78,79 @@ class FilterLogic extends AbstractContextAwareFilter
 
         $this->filters = $this->getFilters($resourceClass, $operationName);
 
+
+        // Issue #10 workaround, tries to AND with criteria from extensions
+        $existingWhere = (string) $queryBuilder->getDQLPart('where');
+
+        $newQb = new QueryBuilder($queryBuilder->getEntityManager());
+        $newQb->add('select', $queryBuilder->getDQLPart('select'));
+        $newQb->add('from', $queryBuilder->getDQLPart('from'));
+        $newQng = new QueryNameGenerator();
+        // Problem: too hard to add the joins from the extensions and correctly initialize the QueryNameGenerator
+        // Workaround may fail if extensions did any joins and filters also, or if both use the QueryNameGenerator
+
+         $filters = $this->getFilters($resourceClass, $operationName, true);
+        foreach ($filters as $filter) {
+            $filter->apply($newQb, $newQng, $resourceClass, $operationName, $context);
+        }
+        $filterWhere = (string) $newQb->getDQLPart('where');
+
+        $logicExp = new Expr\Andx();
+        $combinator = 'AND';
         if (isset($context['filters']['and']) ) {
             $expressions = $this->filterProperty('and', $context['filters']['and'], $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
-            foreach($expressions as $exp) {
-                $queryBuilder->andWhere($exp);
-            };
+            //var_export($expressions);
+            $logicExp->addMultiple($expressions);
         }
         if (isset($context['filters']['not']) ) {
             // NOT expressions are combined by parent logic, here defaulted to AND
             $expressions = $this->filterProperty('not', $context['filters']['not'], $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
             foreach($expressions as $exp) {
-                $queryBuilder->andWhere(new Expr\Func('NOT', [$exp]));
+                $logicExp->add(new Expr\Func('NOT', [$exp]));
             };
         }
         if (isset($context['filters']['or'])) {
-            $expressions = $this->filterProperty('or', $context['filters']['or'], $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
-            foreach($expressions as $exp) {
-                $queryBuilder->orWhere($exp);
-            };
+            $orExpressions = $this->filterProperty('or', $context['filters']['or'], $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
+            if (!empty($orExpressions)) {
+                $logicExp = new Expr\Orx([$logicExp]);
+                $logicExp->addMultiple($orExpressions);
+                $combinator = 'OR';
+            }
         }
 
         if ($this->innerJoinsLeft) {
             $this->replaceInnerJoinsByLeftJoins($queryBuilder);
         }
+
+        // if $existingWhere empty no problem
+        // if  $filterWhere empty nest OR in an extra AND
+        if (empty($existingWhere) || empty($filterWhere) ) {
+            $queryBuilder->andWhere($logicExp);
+            return;
+        }
+        // elseif only criteria from filters, apply according to operator
+        if ($existingWhere == $filterWhere) {
+            if ($combinator == 'OR') {
+                $queryBuilder->orWhere($logicExp);
+            } else {
+                $queryBuilder->andWhere($logicExp);
+            }
+            return;
+        }
+        // elseif criteria from filters follow AND, replace them
+        if(false!==strpos($existingWhere, " AND $filterWhere")) {
+            $queryBuilder->add('where',
+                str_replace($filterWhere, "($filterWhere $combinator ($logicExp))", $existingWhere)
+            );
+            return;
+        }
+
+        // Could not replace criteria from filters, probably an extension used the QueryNameGenerator
+        //throw new \RuntimeException("Could not replace '$filterWhere' in '$existingWhere'");
+        throw new \RuntimeException("Could not replace criteria from filters");
     }
 
-    /**
+     /**
      * @return array of Doctrine\ORM\Query\Expr\* and/or string (DQL),
      * each of which must be self-contained in the sense that the intended
      * logic is not compromised if it is combined with the others and other
@@ -249,10 +297,11 @@ class FilterLogic extends AbstractContextAwareFilter
     /**
      * @param string $resourceClass
      * @param string $operationName
+     * @param bool $ignoreClassExp
      * @return ContextAwareFilterInterface[] From resource except $this and OrderFilters
      * @throws ResourceClassNotFoundException
      */
-    protected function getFilters($resourceClass, $operationName)
+    protected function getFilters($resourceClass, $operationName, $ignoreClassExp=false)
     {
         $resourceMetadata = $this->resourceMetadataFactory->create($resourceClass);
         $resourceFilters = $resourceMetadata->getCollectionOperationAttribute($operationName, 'filters', [], true);
@@ -265,7 +314,7 @@ class FilterLogic extends AbstractContextAwareFilter
             if ($filter instanceof ContextAwareFilterInterface
                 && !($filter instanceof OrderFilter)
                 && $filter !== $this
-                && preg_match($this->classExp, get_class($filter))
+                && ($ignoreClassExp || preg_match($this->classExp, get_class($filter)))
             ) {
                 $result[$filterId] = $filter;
             }

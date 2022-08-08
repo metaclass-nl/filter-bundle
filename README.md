@@ -7,11 +7,6 @@ Combines API Platform ORM Filters with AND, OR and NOT according to client reque
 - works with built in filters of Api Platform, except for DateFilter
   with EXCLUDE_NULL. A DateFilter subclass is provided to correct this.
 
-SECURIY WARNING: The current version of LogicFilter allows clients 
-to bypass criteria set by custom Extensions to limit their access to certain data,
-like the examples do in the docs on [Custom Doctrine ORM Extension](https://api-platform.com/docs/core/extensions/#custom-doctrine-orm-extension) 
-see [Issue 10](https://github.com/metaclass-nl/filter-bundle/issues/10).
-
 Usage
 -----
 Once the FilterLogic class and service configuration have been installed in you app,
@@ -89,6 +84,8 @@ class Article {
 // ...
 }
 ```
+<b>SECURITY WARNING</b>: do not use this option if the working of any of the extionsions 
+you use relies on INNER JOINS selecting only rows with NOT NULL values!
 
 In case you do not like FilterLogic messing with the joins you can make
 the built-in filters of Api Platform generate left joins themselves by first adding
@@ -103,6 +100,12 @@ class Article {
 // ...
 }
 ```
+<b>SECURITY WARNING</b>: Extensions that use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryBuilderHelper::addJoinOnce
+or ApiPlatform\Core\Bridge\Doctrine\Orm\PropertyHelperTrait::addJoinsForNestedProperty
+may not have been intended to generate left joins instead of inner joins. Of course this would
+technically be their error, not yours, but still it is better to prevent an eventual breach of security
+then having to deal with the consequences.
+
 
 With one fo these workarounds the following will find Articles whose title contains 'pro'
 as well as those whose keywords contain one whose word is 'php'.
@@ -141,6 +144,10 @@ on one another so that the intended logic is not compromised if they are recombi
 with the others by either Doctrine\ORM\Query\Expr\Andx or Doctrine\ORM\Query\Expr\Orx.
 
 May Fail if a filter or extension uses QueryBuilder::where or ::add. 
+
+May fail if boths extensions and filters add joins or both use the QueryNameGenerator 
+because the workaround for [Issue 10](https://github.com/metaclass-nl/filter-bundle/issues/10)
+can not reconize wich ones come from the extensions and not correctly initialize the QueryNameGenerator.
 
 You are advised to check the code of all custom and third party Filters and
 not to combine those that use QueryBuilder::where or ::add with FilterLogic

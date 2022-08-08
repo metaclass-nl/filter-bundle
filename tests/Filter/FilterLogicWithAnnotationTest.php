@@ -56,10 +56,10 @@ class FilterLogicWithAnnotationTest extends KernelTestCase
         self::assertNotNull($this->filterLogic, "this->filterLogic");
     }
 
-    public function testDdFilter()
+    public function testDdFilterAnd()
     {
         $reqData = null;
-        parse_str('&and[or][dd][after]=2021-01-01&and[or][exists][bool]=true', $reqData);
+        parse_str('exists[bool]=true&and[or][dd][after]=2021-01-01', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
         foreach ($this->filters as $filter) {
@@ -69,8 +69,8 @@ class FilterLogicWithAnnotationTest extends KernelTestCase
         $this->assertEquals(
             str_replace('
 ', '', "SELECT o FROM Metaclass\FilterBundle\Entity\TestEntity o WHERE 
-(o.dd >= :dd_p1 OR o.dd IS NULL) 
-OR o.bool IS NOT NULL"),
+o.bool IS NOT NULL 
+AND (o.dd >= :dd_p1 OR o.dd IS NULL)"),
             $this->testEntityQb->getDQL(),
             'DQL');
         $this->assertEquals(
@@ -78,6 +78,143 @@ OR o.bool IS NOT NULL"),
             $this->testEntityQb->getParameter('dd_p1')->getValue()->format('Y-m-d'),
             'Parameter dd_p1');
 
+    }
+
+    public function testDdFilterNot()
+    {
+        $reqData = null;
+        parse_str('exists[bool]=true&not[dd][after]=2021-01-01', $reqData);
+        // var_dump($reqData);
+        $context = ['filters' => $reqData];
+        foreach ($this->filters as $filter) {
+            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        }
+
+        $this->assertEquals(
+            str_replace('
+', '', "SELECT o FROM Metaclass\FilterBundle\Entity\TestEntity o WHERE 
+o.bool IS NOT NULL 
+AND (NOT(o.dd >= :dd_p1 OR o.dd IS NULL))"),
+            $this->testEntityQb->getDQL(),
+            'DQL');
+        $this->assertEquals(
+            '2021-01-01',
+            $this->testEntityQb->getParameter('dd_p1')->getValue()->format('Y-m-d'),
+            'Parameter dd_p1');
+    }
+
+    public function testDdFilterOr()
+    {
+        $reqData = null;
+        parse_str('exists[bool]=true&or[dd][after]=2021-01-01&or[dd][before]=2010-02-02', $reqData);
+        // var_dump($reqData);
+        $context = ['filters' => $reqData];
+        foreach ($this->filters as $filter) {
+            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        }
+
+        $this->assertEquals(
+            str_replace('
+', '', "SELECT o FROM Metaclass\FilterBundle\Entity\TestEntity o WHERE 
+o.bool IS NOT NULL 
+OR (
+(o.dd <= :dd_p1 AND o.dd IS NOT NULL) 
+OR (o.dd >= :dd_p2 OR o.dd IS NULL)
+)"),
+            $this->testEntityQb->getDQL(),
+            'DQL');
+        $this->assertEquals(
+            '2010-02-02',
+            $this->testEntityQb->getParameter('dd_p1')->getValue()->format('Y-m-d'),
+            'Parameter dd_p1');
+        $this->assertEquals(
+            '2021-01-01',
+            $this->testEntityQb->getParameter('dd_p2')->getValue()->format('Y-m-d'),
+            'Parameter dd_p2');
+    }
+
+    public function testDdFilterAndWithExtsionCriterium()
+    {
+        $this->testEntityQb->andWhere('o.numb >= 0');
+        $reqData = null;
+        parse_str('exists[bool]=true&and[or][dd][after]=2021-01-01', $reqData);
+        // var_dump($reqData);
+        $context = ['filters' => $reqData];
+        foreach ($this->filters as $filter) {
+            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        }
+
+        $this->assertEquals(
+            str_replace('
+', '', "SELECT o FROM Metaclass\FilterBundle\Entity\TestEntity o WHERE 
+o.numb >= 0 AND (
+o.bool IS NOT NULL 
+AND (o.dd >= :dd_p1 OR o.dd IS NULL)
+)"),
+            $this->testEntityQb->getDQL(),
+            'DQL');
+        $this->assertEquals(
+            '2021-01-01',
+            $this->testEntityQb->getParameter('dd_p1')->getValue()->format('Y-m-d'),
+            'Parameter dd_p1');
+
+    }
+
+    public function testDdFilterNotWithExtsionCriterium()
+    {
+        $this->testEntityQb->andWhere('o.numb >= 0');
+        $reqData = null;
+        parse_str('exists[bool]=true&not[dd][after]=2021-01-01', $reqData);
+        // var_dump($reqData);
+        $context = ['filters' => $reqData];
+        foreach ($this->filters as $filter) {
+            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        }
+
+        $this->assertEquals(
+            str_replace('
+', '', "SELECT o FROM Metaclass\FilterBundle\Entity\TestEntity o WHERE 
+o.numb >= 0 AND (
+o.bool IS NOT NULL 
+AND (NOT(o.dd >= :dd_p1 OR o.dd IS NULL)))"),
+            $this->testEntityQb->getDQL(),
+            'DQL');
+        $this->assertEquals(
+            '2021-01-01',
+            $this->testEntityQb->getParameter('dd_p1')->getValue()->format('Y-m-d'),
+            'Parameter dd_p1');
+    }
+
+    public function testDdFilterOrWithExtsionCriterium()
+    {
+        $this->testEntityQb->andWhere('o.numb >= 0');
+        $reqData = null;
+        parse_str('exists[bool]=true&or[dd][after]=2021-01-01&or[dd][before]=2010-02-02', $reqData);
+        // var_dump($reqData);
+        $context = ['filters' => $reqData];
+        foreach ($this->filters as $filter) {
+            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        }
+
+        $this->assertEquals(
+            str_replace('
+', '', "SELECT o FROM Metaclass\FilterBundle\Entity\TestEntity o WHERE 
+o.numb >= 0 AND (
+o.bool IS NOT NULL 
+OR (
+(o.dd <= :dd_p1 AND o.dd IS NOT NULL) 
+OR (o.dd >= :dd_p2 OR o.dd IS NULL)
+))"),
+            $this->testEntityQb->getDQL(),
+            'DQL');
+        $this->assertEquals(
+            '2010-02-02',
+            $this->testEntityQb->getParameter('dd_p1')->getValue()->format('Y-m-d'),
+            'Parameter dd_p1');
+        $this->assertEquals(
+            '2021-01-01',
+            $this->testEntityQb->getParameter('dd_p2')->getValue()->format('Y-m-d'),
+            'Parameter dd_p2');
     }
 
     public function testRexExp()
