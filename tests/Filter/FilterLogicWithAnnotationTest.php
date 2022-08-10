@@ -133,9 +133,10 @@ OR (o.dd >= :dd_p2 OR o.dd IS NULL)
             'Parameter dd_p2');
     }
 
-    public function testDdFilterAndWithExtsionCriterium()
+    public function testDdFilterAndWithExtsionCriteria()
     {
-        $this->testEntityQb->andWhere('o.numb >= 0');
+        $this->testEntityQb->orWhere('o.numb >= 0');
+        $this->testEntityQb->orWhere('o.numb <= 999');
         $reqData = null;
         parse_str('exists[bool]=true&and[or][dd][after]=2021-01-01', $reqData);
         // var_dump($reqData);
@@ -147,10 +148,10 @@ OR (o.dd >= :dd_p2 OR o.dd IS NULL)
         $this->assertEquals(
             str_replace('
 ', '', "SELECT o FROM Metaclass\FilterBundle\Entity\TestEntity o WHERE 
-o.numb >= 0 AND (
+(o.numb >= 0 OR o.numb <= 999) AND 
 o.bool IS NOT NULL 
 AND (o.dd >= :dd_p1 OR o.dd IS NULL)
-)"),
+"),
             $this->testEntityQb->getDQL(),
             'DQL');
         $this->assertEquals(
@@ -160,9 +161,10 @@ AND (o.dd >= :dd_p1 OR o.dd IS NULL)
 
     }
 
-    public function testDdFilterNotWithExtsionCriterium()
+    public function testDdFilterNotWithExtsionCriteria()
     {
-        $this->testEntityQb->andWhere('o.numb >= 0');
+        $this->testEntityQb->orWhere('o.numb >= 0');
+        $this->testEntityQb->orWhere('o.numb <= 999');
         $reqData = null;
         parse_str('exists[bool]=true&not[dd][after]=2021-01-01', $reqData);
         // var_dump($reqData);
@@ -174,9 +176,9 @@ AND (o.dd >= :dd_p1 OR o.dd IS NULL)
         $this->assertEquals(
             str_replace('
 ', '', "SELECT o FROM Metaclass\FilterBundle\Entity\TestEntity o WHERE 
-o.numb >= 0 AND (
+(o.numb >= 0 OR o.numb <= 999) AND 
 o.bool IS NOT NULL 
-AND (NOT(o.dd >= :dd_p1 OR o.dd IS NULL)))"),
+AND (NOT(o.dd >= :dd_p1 OR o.dd IS NULL))"),
             $this->testEntityQb->getDQL(),
             'DQL');
         $this->assertEquals(
@@ -185,9 +187,10 @@ AND (NOT(o.dd >= :dd_p1 OR o.dd IS NULL)))"),
             'Parameter dd_p1');
     }
 
-    public function testDdFilterOrWithExtsionCriterium()
+    public function testDdFilterOrWithExtsionCriteria()
     {
-        $this->testEntityQb->andWhere('o.numb >= 0');
+        $this->testEntityQb->orWhere('o.numb >= 0');
+        $this->testEntityQb->orWhere('o.numb <= 999');
         $reqData = null;
         parse_str('exists[bool]=true&or[dd][after]=2021-01-01&or[dd][before]=2010-02-02', $reqData);
         // var_dump($reqData);
@@ -199,7 +202,7 @@ AND (NOT(o.dd >= :dd_p1 OR o.dd IS NULL)))"),
         $this->assertEquals(
             str_replace('
 ', '', "SELECT o FROM Metaclass\FilterBundle\Entity\TestEntity o WHERE 
-o.numb >= 0 AND (
+(o.numb >= 0 OR o.numb <= 999) AND (
 o.bool IS NOT NULL 
 OR (
 (o.dd <= :dd_p1 AND o.dd IS NOT NULL) 

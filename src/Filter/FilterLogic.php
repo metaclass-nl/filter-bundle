@@ -122,25 +122,24 @@ class FilterLogic extends AbstractContextAwareFilter
             $this->replaceInnerJoinsByLeftJoins($queryBuilder);
         }
 
-        // if $existingWhere empty no problem
-        // if  $filterWhere empty nest OR in an extra AND
-        if (empty($existingWhere) || empty($filterWhere) ) {
+        // if $existingWhere empty it does not matter how applied
+        // if combinator == AND no problem
+        // if  $filterWhere empty use andWhere
+        if (empty($existingWhere) || empty($filterWhere) || $combinator == 'AND') {
             $queryBuilder->andWhere($logicExp);
             return;
         }
         // elseif only criteria from filters, apply according to operator
         if ($existingWhere == $filterWhere) {
-            if ($combinator == 'OR') {
-                $queryBuilder->orWhere($logicExp);
-            } else {
-                $queryBuilder->andWhere($logicExp);
-            }
+            $queryBuilder->orWhere($logicExp);
             return;
         }
-        // elseif criteria from filters follow AND, replace them
+
+        // Criteria from both extensions and filters, should OR only with those from filters,
+        // replace them if criteria from filters follow AND
         if(false!==strpos($existingWhere, " AND $filterWhere")) {
             $queryBuilder->add('where',
-                str_replace($filterWhere, "($filterWhere $combinator ($logicExp))", $existingWhere)
+                str_replace($filterWhere, "($filterWhere OR ($logicExp))", $existingWhere)
             );
             return;
         }
