@@ -66,12 +66,12 @@ class FilterLogic extends AbstractContextAwareFilter
         $description = [];
         $reflectionClass = new \ReflectionClass($resourceClass);
 
-        // has entity #[ApiFilter(FilterLogic::class)] ?
+        // Does the resource have the filter? #[ApiFilter(FilterLogic::class)] ?
         if (false === $this->isFilterLogicFilter($reflectionClass)) {
             return $description;
         }
 
-        // has entity #[ApiFilter(SearchFilter::class)] with props? ?
+        // Does the resource have the filter with properties? #[ApiFilter(SearchFilter::class)]
         $properties = $this->getPropertiesFromSearchFilter($reflectionClass);
         if  (null === $properties) {
             return $description;
