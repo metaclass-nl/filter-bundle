@@ -122,6 +122,11 @@ class FilterLogic extends AbstractContextAwareFilter
             $this->replaceInnerJoinsByLeftJoins($queryBuilder);
         }
 
+        // only add where if parts is filled.
+        if (count($logicExp->getParts()) === 0) {
+            return;
+        }
+        
         // if $existingWhere empty it does not matter how applied
         // if combinator == AND no problem
         // if  $filterWhere empty use andWhere
