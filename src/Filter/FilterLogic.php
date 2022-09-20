@@ -89,7 +89,7 @@ class FilterLogic extends AbstractContextAwareFilter
         // Problem: too hard to add the joins from the extensions and correctly initialize the QueryNameGenerator
         // Workaround may fail if extensions did any joins and filters also, or if both use the QueryNameGenerator
 
-         $filters = $this->getFilters($resourceClass, $operationName, true);
+        $filters = $this->getFilters($resourceClass, $operationName, true);
         foreach ($filters as $filter) {
             $filter->apply($newQb, $newQng, $resourceClass, $operationName, $context);
         }
@@ -154,7 +154,7 @@ class FilterLogic extends AbstractContextAwareFilter
         throw new \RuntimeException("Could not replace criteria from filters");
     }
 
-     /**
+    /**
      * @return array of Doctrine\ORM\Query\Expr\* and/or string (DQL),
      * each of which must be self-contained in the sense that the intended
      * logic is not compromised if it is combined with the others and other
@@ -183,6 +183,9 @@ class FilterLogic extends AbstractContextAwareFilter
      */
     protected function doGenerate($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)
     {
+        if (empty($context['filters'])) {
+            return [];
+        }
         $oldWhere = $queryBuilder->getDQLPart('where');
 
         // replace by marker expression
@@ -347,7 +350,7 @@ class FilterLogic extends AbstractContextAwareFilter
                         $joinExp->getConditionType(),
                         $joinExp->getCondition(),
                         $joinExp->getIndexBy()
-                      );
+                    );
                 } else {
                     $result[$rootAlias][$i] = $joinExp;
                 }

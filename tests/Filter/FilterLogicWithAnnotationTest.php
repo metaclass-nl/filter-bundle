@@ -73,6 +73,23 @@ class FilterLogicWithAnnotationTest extends KernelTestCase
             'DQL');
     }
 
+    public function testOrNoFilter()
+    {
+        $reqData = null;
+        parse_str('or', $reqData);
+        // var_dump($reqData);
+        $context = ['filters' => $reqData];
+        foreach ($this->filters as $filter) {
+            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        }
+
+        $this->assertEquals(
+            str_replace('
+', '', "SELECT o FROM Metaclass\FilterBundle\Entity\TestEntity o"),
+            $this->testEntityQb->getDQL(),
+            'DQL');
+    }
+
     public function testDdFilterAnd()
     {
         $reqData = null;
