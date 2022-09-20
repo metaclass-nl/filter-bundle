@@ -118,15 +118,15 @@ class FilterLogic extends AbstractContextAwareFilter
             }
         }
 
+        // Only add where and replace inner joins if there is any filter logic to apply.
+        if (count($logicExp->getParts()) === 0) {
+            return;
+        }
+
         if ($this->innerJoinsLeft) {
             $this->replaceInnerJoinsByLeftJoins($queryBuilder);
         }
 
-        // only add where if parts is filled.
-        if (count($logicExp->getParts()) === 0) {
-            return;
-        }
-        
         // if $existingWhere empty it does not matter how applied
         // if combinator == AND no problem
         // if  $filterWhere empty use andWhere
