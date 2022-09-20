@@ -77,10 +77,12 @@ class FilterLogic extends AbstractContextAwareFilter
 
         $this->filters = $this->getFilters($resourceClass, $operationName);
 
+        $logic = false; #15 when no where filter is used, do not replace inner joins by left joins
         if (isset($context['filters']['and']) ) {
             $expressions = $this->filterProperty('and', $context['filters']['and'], $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
             foreach($expressions as $exp) {
                 $queryBuilder->andWhere($exp);
+                $logic = true;
             };
         }
         if (isset($context['filters']['not']) ) {
@@ -88,15 +90,19 @@ class FilterLogic extends AbstractContextAwareFilter
             $expressions = $this->filterProperty('not', $context['filters']['not'], $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
             foreach($expressions as $exp) {
                 $queryBuilder->andWhere(new Expr\Func('NOT', [$exp]));
+                $logic = true;
             };
         }
         #Issue 10: for security allways AND with existing criteria
         if (isset($context['filters']['or'])) {
             $expressions = $this->filterProperty('or', $context['filters']['or'], $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
-            $queryBuilder->andWhere(new Expr\Orx($expressions));
+            if (!empty($expressions)) {
+                $queryBuilder->andWhere(new Expr\Orx($expressions));
+                $logic = true;
+            }
         }
 
-        if ($this->innerJoinsLeft) {
+        if ($this->innerJoinsLeft && $logic) {
             $this->replaceInnerJoinsByLeftJoins($queryBuilder);
         }
     }
@@ -130,6 +136,9 @@ class FilterLogic extends AbstractContextAwareFilter
      */
     protected function doGenerate($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)
     {
+        if (empty($context['filters'])) {
+            return;
+        }
         $oldWhere = $queryBuilder->getDQLPart('where');
 
         // replace by marker expression
@@ -293,7 +302,7 @@ class FilterLogic extends AbstractContextAwareFilter
                         $joinExp->getConditionType(),
                         $joinExp->getCondition(),
                         $joinExp->getIndexBy()
-                      );
+                    );
                 } else {
                     $result[$rootAlias][$i] = $joinExp;
                 }
