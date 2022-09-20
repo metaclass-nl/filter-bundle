@@ -137,7 +137,7 @@ class FilterLogic extends AbstractContextAwareFilter
     protected function doGenerate($queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context)
     {
         if (empty($context['filters'])) {
-            return;
+            return [];
         }
         $oldWhere = $queryBuilder->getDQLPart('where');
 
