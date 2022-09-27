@@ -2,6 +2,7 @@
 
 namespace Metaclass\FilterBundle\Filter;
 
+use ApiPlatform\Core\Annotation\ApiFilter;
 use ApiPlatform\Core\Api\FilterCollection;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\AbstractContextAwareFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\ContextAwareFilterInterface;
@@ -14,6 +15,8 @@ use Doctrine\ORM\Query\Expr;
 use Doctrine\Persistence\ManagerRegistry;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use ReflectionAttribute;
+use ReflectionClass;
 use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
 use Doctrine\ORM\Query\Expr\Join;
 
@@ -60,8 +63,30 @@ class FilterLogic extends AbstractContextAwareFilter
     /** {@inheritdoc } */
     public function getDescription(string $resourceClass): array
     {
-        // No description
-        return [];
+        $description = [];
+        $reflectionClass = new \ReflectionClass($resourceClass);
+
+        // Does the resource have the filter? #[ApiFilter(FilterLogic::class)] ?
+        if (false === $this->isFilterLogicFilter($reflectionClass)) {
+            return $description;
+        }
+
+        // Does the resource have the filter with properties? #[ApiFilter(SearchFilter::class)]
+        $properties = $this->getPropertiesFromSearchFilter($reflectionClass);
+        if  (null === $properties) {
+            return $description;
+        }
+
+        foreach ($properties as $key => $value) {
+            $description['and[or]['.$key.']'] = [
+                'description' => 'andOr filter',
+                'type' => 'string',
+                'required' => false,
+            ];
+            // todo add all filters here and or not ...
+        }
+
+        return $description;
     }
 
     /**
@@ -309,5 +334,31 @@ class FilterLogic extends AbstractContextAwareFilter
             }
         }
         $queryBuilder->add('join', $result);
+    }
+
+    private function getPropertiesFromSearchFilter(\ReflectionClass $class): ?array
+    {
+        $apiFilterAttributes = $class->getAttributes('ApiPlatform\Core\Annotation\ApiFilter', ReflectionAttribute::IS_INSTANCEOF);
+
+        foreach ($apiFilterAttributes as $filterAttribute) {
+            if  ('ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\SearchFilter' === $filterAttribute->newInstance()->filterClass) {
+                return $filterAttribute->newInstance()->properties;
+            }
+        }
+
+        return null;
+    }
+
+    private function isFilterLogicFilter(\ReflectionClass $class): bool
+    {
+        $apiFilterAttributes = $class->getAttributes('ApiPlatform\Core\Annotation\ApiFilter', ReflectionAttribute::IS_INSTANCEOF);
+
+        foreach ($apiFilterAttributes as $filterAttribute) {
+            if  ('Metaclass\FilterBundle\Filter\FilterLogic' === $filterAttribute->newInstance()->filterClass) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
