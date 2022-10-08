@@ -81,9 +81,9 @@ will only apply API Platform ORM Filters in logic context.
 
 Installation
 ------------
-With composer:
+This version is for Api Platform 2.5-2.7.
 ```shell
-composer require metaclass-nl/filter-bundle "dev-master"
+composer require metaclass-nl/filter-bundle "^2.0"
 ```
 
 Then add the bundle to your api config/bundles.php:
