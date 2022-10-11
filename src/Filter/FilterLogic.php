@@ -6,7 +6,6 @@ use ApiPlatform\Doctrine\Orm\Filter\AbstractFilter;
 use ApiPlatform\Doctrine\Orm\Filter\FilterInterface;
 use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use ApiPlatform\Doctrine\Orm\Util\QueryNameGeneratorInterface;
-use ApiPlatform\Exception\ResourceClassNotFoundException;
 use ApiPlatform\Metadata\Operation;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Query\Expr;
@@ -23,7 +22,7 @@ use Doctrine\ORM\Query\Expr\Join;
  * and though it makes it more like one would expect given the semantics of its name,
  * it does break backward compatibility.
  *
- * Copyright (c) MetaClass, Groningen, 2021. MIT License
+ * Copyright (c) MetaClass, Groningen, 2021-2022. MIT License
  */
 class FilterLogic extends AbstractFilter
 {

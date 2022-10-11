@@ -5,11 +5,11 @@ namespace Metaclass\FilterBundle\Tests\Filter;
 
 
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use ApiPlatform\Core\Api\FilterInterface;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\DateFilter;
-use ApiPlatform\Core\Bridge\Doctrine\Common\Filter\DateFilterInterface;
+use ApiPlatform\Doctrine\Orm\Filter\FilterInterface;
+use ApiPlatform\Doctrine\Orm\Filter\DateFilter;
+use ApiPlatform\Doctrine\Common\Filter\DateFilterInterface;
 use Metaclass\FilterBundle\Filter\DateFilter as AdaptedDateFilter;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGenerator;
+use ApiPlatform\Doctrine\Orm\Util\QueryNameGenerator;
 use Doctrine\Persistence\ManagerRegistry;
 use Metaclass\FilterBundle\Entity\TestEntity;
 use Metaclass\FilterBundle\Filter\FilterLogic;
@@ -41,28 +41,27 @@ class DateFilterTest extends KernelTestCase
         $this->qb = $this->repo->createQueryBuilder('o');
         $this->queryNameGen = new QueryNameGenerator();
 
-        $metadataFactory = $container->get('test.api_platform.metadata.resource.metadata_factory');
         $filterLocator = $container->get('test.api_platform.filter_locator');
         $requestStack = null;
         $logger = null;
         $nameConverter = null;
 
-        $this->filterLogic = new FilterLogic($metadataFactory, $filterLocator, $this->doctrine, $logger, []);
-        $this->dateFilter = new DateFilter($this->doctrine, $requestStack, $logger, ['dd' => DateFilterInterface::EXCLUDE_NULL]);
-        $this->adaptedDateFilter = new AdaptedDateFilter($this->doctrine, $requestStack, $logger, ['dd' => DateFilterInterface::EXCLUDE_NULL]);
+        $this->filterLogic = new FilterLogic($filterLocator, $this->doctrine, $logger, []);
+        $this->dateFilter = new DateFilter($this->doctrine, $logger, ['dd' => DateFilterInterface::EXCLUDE_NULL]);
+        $this->adaptedDateFilter = new AdaptedDateFilter($this->doctrine, $logger, ['dd' => DateFilterInterface::EXCLUDE_NULL]);
     }
 
     public function testExcludeNull()
     {
-        $reqData = null;
+        $reqData = [];
         parse_str('dd[before]=2021-01-01&dd[after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
         $qb2 = $this->repo->createQueryBuilder('o');
         $qng2 = new QueryNameGenerator();
 
-        $this->dateFilter->apply($this->qb, $this->queryNameGen, TestEntity::class, 'get', $context);
-        $this->adaptedDateFilter->apply($qb2, $qng2, TestEntity::class, 'get', $context);
+        $this->dateFilter->apply($this->qb, $this->queryNameGen, TestEntity::class, null, $context);
+        $this->adaptedDateFilter->apply($qb2, $qng2, TestEntity::class, null, $context);
 
         $this->assertEquals(
             str_replace('
@@ -102,13 +101,13 @@ AND
         // var_dump($reqData);
         $context = ['filters' => $reqData];
 
-        $dateFilter = new DateFilter($this->doctrine, null, null, ['dd' => null]);
-        $dateFilter->apply($this->qb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        $dateFilter = new DateFilter($this->doctrine, null, ['dd' => null]);
+        $dateFilter->apply($this->qb, $this->queryNameGen, TestEntity::class, null, $context);
 
-        $adaptedDateFilter = new AdaptedDateFilter($this->doctrine, null, null, ['dd' => null]);
+        $adaptedDateFilter = new AdaptedDateFilter($this->doctrine, null, ['dd' => null]);
         $qb2 = $this->repo->createQueryBuilder('o');
         $qng2 = new QueryNameGenerator();
-        $adaptedDateFilter->apply($qb2, $qng2, TestEntity::class, 'get', $context);
+        $adaptedDateFilter->apply($qb2, $qng2, TestEntity::class, null, $context);
 
         $this->assertEquals(
             $this->qb->getDQL(),
@@ -124,13 +123,13 @@ AND
         // var_dump($reqData);
         $context = ['filters' => $reqData];
 
-        $dateFilter = new DateFilter($this->doctrine, null, null, ['dd' => DateFilterInterface::INCLUDE_NULL_AFTER]);
-        $dateFilter->apply($this->qb, $this->queryNameGen, TestEntity::class, 'get', $context);
+        $dateFilter = new DateFilter($this->doctrine, null, ['dd' => DateFilterInterface::INCLUDE_NULL_AFTER]);
+        $dateFilter->apply($this->qb, $this->queryNameGen, TestEntity::class, null, $context);
 
-        $adaptedDateFilter = new AdaptedDateFilter($this->doctrine, null, null, ['dd' => DateFilterInterface::INCLUDE_NULL_AFTER]);
+        $adaptedDateFilter = new AdaptedDateFilter($this->doctrine, null, ['dd' => DateFilterInterface::INCLUDE_NULL_AFTER]);
         $qb2 = $this->repo->createQueryBuilder('o');
         $qng2 = new QueryNameGenerator();
-        $adaptedDateFilter->apply($qb2, $qng2, TestEntity::class, 'get', $context);
+        $adaptedDateFilter->apply($qb2, $qng2, TestEntity::class, null, $context);
 
         $this->assertEquals(
             $this->qb->getDQL(),
@@ -147,7 +146,7 @@ AND
         parse_str('or[dd][before]=2021-01-01&or[dd][after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(
