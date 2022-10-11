@@ -2,8 +2,9 @@
 
 namespace Metaclass\FilterBundle\Filter;
 
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\ContextAwareFilterInterface;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGeneratorInterface;
+use ApiPlatform\Doctrine\Orm\Filter\FilterInterface;
+use ApiPlatform\Doctrine\Orm\Util\QueryNameGeneratorInterface;
+use ApiPlatform\Metadata\Operation;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Query\Expr\Join;
 
@@ -15,7 +16,7 @@ use Doctrine\ORM\Query\Expr\Join;
  * WARNING: This changes the behavior of ExistsFilter =false, consider
  * using ExistFilter included in this bundle instead.
  */
-class AddFakeLeftJoin implements ContextAwareFilterInterface
+class AddFakeLeftJoin implements FilterInterface
 {
     public static $FAKEJOIN = "Fake.kdoejfndnsklslwkweofdjhsd";
 
@@ -33,7 +34,7 @@ class AddFakeLeftJoin implements ContextAwareFilterInterface
         QueryBuilder $queryBuilder,
         QueryNameGeneratorInterface $queryNameGenerator,
         string $resourceClass,
-        string $operationName = null,
+        Operation $operation = null,
         array $context = []
     ) {
        //  $queryBuilder->leftJoin(self::$FAKEJOIN, null);

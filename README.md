@@ -1,5 +1,10 @@
 Filter logic for API Platform
 =============================
+UNDER DEVELOPMENT
+status:
+- only tested with Api Platform core 2.7 (metadata_backward_compatibility_layer: false)
+- Metaclass\FilterBundle\Filter\DateFilter not working
+
 Combines API Platform ORM Filters with AND, OR and NOT according to client request.
 - supports nested logic (like parentheses in SQL)
 - supports multiple criteria for the same property
@@ -81,9 +86,9 @@ will only apply API Platform ORM Filters in logic context.
 
 Installation
 ------------
-With composer:
+This version is for Api Platform 3.0 and 2.7 with metadata_backward_compatibility_layer set to false
 ```shell
-composer require metaclass-nl/filter-bundle "dev-master"
+composer require metaclass-nl/filter-bundle "^3.0"
 ```
 
 Then add the bundle to your api config/bundles.php:

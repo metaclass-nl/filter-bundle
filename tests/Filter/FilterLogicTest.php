@@ -4,13 +4,13 @@
 namespace Metaclass\FilterBundle\Tests\Filter;
 
 use ApiPlatform\Core\Api\FilterInterface;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\BooleanFilter;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\DateFilter;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\ExistsFilter;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\NumericFilter;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\RangeFilter;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\SearchFilter;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGenerator;
+use ApiPlatform\Doctrine\Orm\Filter\BooleanFilter;
+use ApiPlatform\Doctrine\Orm\Filter\DateFilter;
+use ApiPlatform\Doctrine\Orm\Filter\ExistsFilter;
+use ApiPlatform\Doctrine\Orm\Filter\NumericFilter;
+use ApiPlatform\Doctrine\Orm\Filter\RangeFilter;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Doctrine\Orm\Util\QueryNameGenerator;
 use Doctrine\Persistence\ManagerRegistry;
 use Metaclass\FilterBundle\Entity\TestEntity;
 use Metaclass\FilterBundle\Filter\FilterLogic;
@@ -42,21 +42,18 @@ class FilterLogicTest extends KernelTestCase
         $this->qb = $this->repo->createQueryBuilder('o');
         $this->queryNameGen = new QueryNameGenerator();
 
-        $metadataFactory = $container->get('test.api_platform.metadata.resource.metadata_factory');
         $filterLocator = $container->get('test.api_platform.filter_locator');
-        $requestStack = null;
-        $logger = null;
+         $logger = null;
         $nameConverter = null;
         $iriConverter = $container->get('test.api_platform.iri_converter');
-        $identifiersExtractor = $container->get('test.api_platform.identifiers_extractor');
 
-        $this->filterLogic = new FilterLogic($metadataFactory, $filterLocator, $this->doctrine, $logger, []);
-        $this->filters[] = new DateFilter($this->doctrine, $requestStack, $logger, ['dd' => null]);
-        $this->filters[] = new NumericFilter($this->doctrine, $requestStack, $logger, ['numb' => null]);
-        $this->filters[] = new RangeFilter($this->doctrine, $requestStack, $logger, ['numb' => null]);
-        $this->filters[] = new SearchFilter($this->doctrine, $requestStack, $iriConverter, null, $logger, ['text' => null, 'toOneNullable.text'=>'start', 'toMany.text'=>'exact'], $identifiersExtractor, $nameConverter);
-        $this->filters[] = new ExistsFilter($this->doctrine, $requestStack, $logger, ['bool' => null, 'dd' => null, 'toOneNullable.dd'=>null, 'toMany.bool'=>null]);
-        $this->filters[] = new BooleanFilter($this->doctrine, $requestStack, $logger, ['bool' => null]);
+        $this->filterLogic = new FilterLogic($filterLocator, $this->doctrine, $logger, []);
+        $this->filters[] = new DateFilter($this->doctrine, $logger, ['dd' => null]);
+        $this->filters[] = new NumericFilter($this->doctrine, $logger, ['numb' => null]);
+        $this->filters[] = new RangeFilter($this->doctrine, $logger, ['numb' => null]);
+        $this->filters[] = new SearchFilter($this->doctrine, $iriConverter, null, $logger, ['text' => null, 'toOneNullable.text'=>'start', 'toMany.text'=>'exact'], $nameConverter);
+        $this->filters[] = new ExistsFilter($this->doctrine, $logger, ['bool' => null, 'dd' => null, 'toOneNullable.dd'=>null, 'toMany.bool'=>null]);
+        $this->filters[] = new BooleanFilter($this->doctrine, $logger, ['bool' => null]);
         $this->filters[] = new FilterToTestAssumptions();
         Reflection::setProperty($this->filterLogic, 'filters', $this->filters);
     }
@@ -68,7 +65,8 @@ class FilterLogicTest extends KernelTestCase
         parse_str('or[dd][before]=2021-01-01&or[dd][after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
@@ -94,7 +92,7 @@ class FilterLogicTest extends KernelTestCase
         parse_str('page=1&or[][dd][before]=2021-01-01&or[][dd][after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
@@ -120,7 +118,7 @@ class FilterLogicTest extends KernelTestCase
         parse_str('page=1&or[][dd][before]=2021-01-01&or[dd][after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
@@ -146,7 +144,7 @@ class FilterLogicTest extends KernelTestCase
         parse_str('and[numb]=7.2&and[or][dd][before]=2021-01-01&and[or][dd][after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
@@ -176,7 +174,7 @@ class FilterLogicTest extends KernelTestCase
         parse_str('and[numb]=7.2&and[0][or][dd][before]=2021-01-01&and[0][or][dd][after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
@@ -206,7 +204,7 @@ class FilterLogicTest extends KernelTestCase
         parse_str('and[numb]=7.2&and[or][dd][before]=2021-01-01&and[0][or][dd][after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
@@ -237,7 +235,7 @@ class FilterLogicTest extends KernelTestCase
         parse_str('or[numb][lte]=55&or[numb][gt]=2.7', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
@@ -263,7 +261,7 @@ class FilterLogicTest extends KernelTestCase
         parse_str('or[][text]=Foo&or[][text]=Bar', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
@@ -287,7 +285,7 @@ class FilterLogicTest extends KernelTestCase
         parse_str('not[][text]=Foo&not[][text]=Bar', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(2, count($result), 'number of expressions');
@@ -315,7 +313,7 @@ class FilterLogicTest extends KernelTestCase
         parse_str('or[not][][numb]=55&or[not][][numb]=2.7', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
@@ -339,7 +337,7 @@ class FilterLogicTest extends KernelTestCase
         parse_str('not[or][][numb]=55&not[or][][numb]=2.7', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
@@ -364,7 +362,7 @@ class FilterLogicTest extends KernelTestCase
         parse_str('or[exists][bool]=true&or[exists][dd]=false', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
@@ -382,7 +380,7 @@ class FilterLogicTest extends KernelTestCase
         parse_str('or[][bool]=true&or[][bool]=false', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
@@ -403,40 +401,40 @@ class FilterLogicTest extends KernelTestCase
 
     public function testAssumptionWhereNotSet()
     {
-        $this->expectException(\LogicException::class );
         $this->expectExceptionMessage("Assumpion failure, unexpected Expression: text = :text_p3");
+        $this->expectException(\LogicException::class );
         $operator = 'or';
         $reqData = null;
         parse_str('or[setWhere][text]=foo&or[dd][before]=2021-01-01&or[dd][after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
     }
 
     public function testAssumptionMarkerFirst()
     {
-        $this->expectException(\LogicException::class );
         $this->expectExceptionMessage("Assumpion failure, unexpected Expression: foo = :foo_p3");
+        $this->expectException(\LogicException::class );
         $operator = 'or';
         $reqData = null;
         parse_str('or[dd][before]=2021-01-01&or[dd][after]=2021-03-03&or[insertBeforeMarker][foo]=bar', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
     }
 
     public function testAssumptionWhereEmptyOrx()
     {
-        $this->expectException(\LogicException::class );
         $this->expectExceptionMessage("Assumpion failure, marker not found");
+        $this->expectException(\LogicException::class );
         $operator = 'or';
         $reqData = null;
         parse_str('or[setWhereEmptyOrx]=foo&or[dd][before]=2021-01-01&or[dd][after]=2021-03-03', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
     }
 
@@ -446,7 +444,7 @@ class FilterLogicTest extends KernelTestCase
         parse_str('and[][toMany.text]=Foo&and[][toOneNullable.text]=Bar', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');
@@ -486,7 +484,7 @@ class FilterLogicTest extends KernelTestCase
         parse_str('or[exists][toMany.bool]=true&or[exists][toOneNullable.dd]=false', $reqData);
         // var_dump($reqData);
         $context = ['filters' => $reqData];
-        $args = [$this->qb, $this->queryNameGen, TestEntity::class, 'get', $context];
+        $args = [$this->qb, $this->queryNameGen, TestEntity::class, null, $context];
         $result = Reflection::callMethod($this->filterLogic, 'doGenerate', $args);
 
         $this->assertEquals(1, count($result), 'number of expressions');

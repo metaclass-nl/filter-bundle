@@ -1,10 +1,11 @@
 <?php
 namespace Metaclass\FilterBundle\Tests\Filter;
 
-use ApiPlatform\Core\Api\FilterInterface;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\DateFilter;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\OrderFilter;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGenerator;
+use ApiPlatform\Doctrine\Orm\Filter\FilterInterface;
+use ApiPlatform\Doctrine\Orm\Filter\DateFilter;
+use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
+use ApiPlatform\Doctrine\Orm\Util\QueryNameGenerator;
+use ApiPlatform\Metadata\Operation;
 use Doctrine\Persistence\ManagerRegistry;
 use Metaclass\FilterBundle\Entity\TestEntity;
 use Metaclass\FilterBundle\Filter\FilterLogic;
@@ -26,6 +27,8 @@ class FilterLogicWithAnnotationTest extends KernelTestCase
     /** @var FilterLogic */
     private $filterLogic;
 
+    private Operation $operation;
+
     public function setUp(): void
     {
         $kernel = static::bootKernel();
@@ -37,10 +40,11 @@ class FilterLogicWithAnnotationTest extends KernelTestCase
         $this->testEntityQb = $this->testEntityRepo->createQueryBuilder('o');
 
         // Get FilterLocic service
-        $metadataFactory = $container->get('test.api_platform.metadata.resource.metadata_factory');
+        $metadataFactory = $container->get('test.api_platform.metadata.resource.metadata_collection_factory');
         $filterLocator = $container->get('test.api_platform.filter_locator');
         $resourceMetadata = $metadataFactory->create(TestEntity::class);
-        $resourceFilters = $resourceMetadata->getCollectionOperationAttribute('get', 'filters', [], true);
+        $this->operation = $resourceMetadata->getOperation('', true, true);
+        $resourceFilters = $this->operation->getFilters();
 
         foreach ($resourceFilters as $filterId) {
             $filter = $filterLocator->has($filterId)
@@ -63,7 +67,7 @@ class FilterLogicWithAnnotationTest extends KernelTestCase
         // var_dump($reqData);
         $context = ['filters' => $reqData];
         foreach ($this->filters as $filter) {
-            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, 'get', $context);
+            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, $this->operation, $context);
         }
 
         $this->assertEquals(
@@ -80,7 +84,7 @@ class FilterLogicWithAnnotationTest extends KernelTestCase
         // var_dump($reqData);
         $context = ['filters' => $reqData];
         foreach ($this->filters as $filter) {
-            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, 'get', $context);
+            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, $this->operation, $context);
         }
 
         $this->assertEquals(
@@ -97,7 +101,7 @@ class FilterLogicWithAnnotationTest extends KernelTestCase
         // var_dump($reqData);
         $context = ['filters' => $reqData];
         foreach ($this->filters as $filter) {
-            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, 'get', $context);
+            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, $this->operation, $context);
         }
 
         $this->assertEquals(
@@ -121,7 +125,7 @@ AND (o.dd >= :dd_p1 OR o.dd IS NULL)"),
         // var_dump($reqData);
         $context = ['filters' => $reqData];
         foreach ($this->filters as $filter) {
-            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, 'get', $context);
+            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, $this->operation, $context);
         }
 
         $this->assertEquals(
@@ -154,7 +158,7 @@ OR (o.dd >= :dd_p2 OR o.dd IS NULL)
         // var_dump($reqData);
         $context = ['filters' => $reqData];
         foreach ($this->filters as $filter) {
-            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, 'get', $context);
+            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, $this->operation, $context);
         }
 
         $this->assertEquals(
@@ -176,7 +180,7 @@ o.dd >= :dd_p1 OR o.dd IS NULL"),
         parse_str('exists[toMany.bool]=false&or[dd][before]=2010-02-02', $reqData);
         $context = ['filters' => $reqData];
         foreach ($this->filters as $filter) {
-            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, 'get', $context);
+            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, $this->operation, $context);
         }
 
         $this->assertEquals(
@@ -200,7 +204,7 @@ AND (o.dd <= :dd_p1 AND o.dd IS NOT NULL)"),
         parse_str('exists[toMany.bool]=false', $reqData);
         $context = ['filters' => $reqData];
         foreach ($this->filters as $filter) {
-            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, 'get', $context);
+            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, $this->operation, $context);
         }
 
         $this->assertEquals(
@@ -220,7 +224,7 @@ WHERE toMany_a1.bool IS NULL"),
         parse_str('exists[toMany.bool]=false&or[dd][before]=2010-02-02', $reqData);
         $context = ['filters' => $reqData];
         foreach ($this->filters as $filter) {
-            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, 'get', $context);
+            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, $this->operation, $context);
         }
 
         $this->assertEquals(
@@ -245,7 +249,7 @@ AND (o.dd <= :dd_p1 AND o.dd IS NOT NULL)"),
         $reqData = ['toMany.text'=>'foo'];
         $context = ['filters' => $reqData];
         foreach ($this->filters as $filter) {
-            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, 'get', $context);
+            $filter->apply($this->testEntityQb, $this->queryNameGen, TestEntity::class, $this->operation, $context);
         }
 
         $this->assertEquals(

@@ -2,7 +2,6 @@ services:
     'metaclass_filter_bundle.filter.filter_logic':
         class: 'Metaclass\FilterBundle\Filter\FilterLogic'
         arguments:
-            - '@api_platform.metadata.resource.metadata_factory'
             - '@api_platform.filter_locator'
         public: false
         abstract: true

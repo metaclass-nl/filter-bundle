@@ -4,20 +4,20 @@
 namespace Metaclass\FilterBundle\Tests\Filter;
 
 
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\AbstractContextAwareFilter;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\ContextAwareFilterInterface;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGeneratorInterface;
+use ApiPlatform\Doctrine\Orm\Filter\FilterInterface;
+use ApiPlatform\Doctrine\Orm\Util\QueryNameGeneratorInterface;
 use Doctrine\ORM\Query\Expr\Orx;
 use Doctrine\ORM\QueryBuilder;
+use ApiPlatform\Metadata\Operation;
 
-class FilterToTestAssumptions implements ContextAwareFilterInterface
+class FilterToTestAssumptions implements FilterInterface
 {
     public function getDescription(string $resourceClass): array
     {
 
     }
 
-    public function apply(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, string $operationName = null, array $context = [])
+    public function apply(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, Operation $operation = null, array $context = [])
     {
         if (isset($context['filters']['setWhere'])) {
             $field = key($context['filters']['setWhere']);

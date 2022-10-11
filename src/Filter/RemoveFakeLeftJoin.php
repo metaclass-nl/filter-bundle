@@ -2,8 +2,9 @@
 
 namespace Metaclass\FilterBundle\Filter;
 
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\ContextAwareFilterInterface;
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGeneratorInterface;
+use ApiPlatform\Doctrine\Orm\Filter\FilterInterface;
+use ApiPlatform\Doctrine\Orm\Util\QueryNameGeneratorInterface;
+use ApiPlatform\Metadata\Operation;
 use Doctrine\ORM\QueryBuilder;
 
 
@@ -11,7 +12,7 @@ use Doctrine\ORM\QueryBuilder;
  * Filter to be added as the last ApiFilter of an ApiResource, even after FilterLogic
  * Removes the Fake Left Join from the QueryBuilder that was placed by AddFakeLeftJoin.
  */
-class RemoveFakeLeftJoin implements ContextAwareFilterInterface
+class RemoveFakeLeftJoin implements FilterInterface
 {
     /** {@inheritdoc } */
     public function getDescription(string $resourceClass): array
@@ -27,7 +28,7 @@ class RemoveFakeLeftJoin implements ContextAwareFilterInterface
         QueryBuilder $queryBuilder,
         QueryNameGeneratorInterface $queryNameGenerator,
         string $resourceClass,
-        string $operationName = null,
+        Operation $operation = null,
         array $context = []
     ) {
        self::removeItFrom($queryBuilder);
