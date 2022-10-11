@@ -2,7 +2,6 @@
 
 namespace Metaclass\FilterBundle\Filter;
 
-use ApiPlatform\Doctrine\Orm\Filter\AbstractFilter;
 use ApiPlatform\Doctrine\Orm\Filter\FilterInterface;
 use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use ApiPlatform\Doctrine\Orm\Util\QueryNameGeneratorInterface;
@@ -24,7 +23,7 @@ use Doctrine\ORM\Query\Expr\Join;
  *
  * Copyright (c) MetaClass, Groningen, 2021-2022. MIT License
  */
-class FilterLogic extends AbstractFilter
+class FilterLogic implements FilterInterface
 {
     /** @var ContainerInterface  */
     private $filterLocator;
@@ -43,9 +42,8 @@ class FilterLogic extends AbstractFilter
      *   but also changes the behavior of ExistsFilter =false.
      * {@inheritdoc}
      */
-    public function __construct(ContainerInterface $filterLocator, ManagerRegistry $managerRegistry, LoggerInterface $logger = null, array $properties = null, NameConverterInterface $nameConverter = null, string $classExp='//', $innerJoinsLeft=false)
+    public function __construct(ContainerInterface $filterLocator, protected ManagerRegistry $managerRegistry, protected ?LoggerInterface $logger = null, protected ?array $properties = null, protected ?NameConverterInterface $nameConverter = null, string $classExp='//', $innerJoinsLeft=false)
     {
-        parent::__construct($managerRegistry, $logger, $properties, $nameConverter);
         $this->filterLocator = $filterLocator;
         $this->classExp = $classExp;
         $this->innerJoinsLeft = $innerJoinsLeft;

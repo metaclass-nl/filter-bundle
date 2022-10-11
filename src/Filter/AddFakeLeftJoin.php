@@ -36,7 +36,7 @@ class AddFakeLeftJoin implements FilterInterface
         string $resourceClass,
         Operation $operation = null,
         array $context = []
-    ) {
+    ): void {
        //  $queryBuilder->leftJoin(self::$FAKEJOIN, null);
         $rootAliases = $queryBuilder->getRootAliases();
         $join = new Join(

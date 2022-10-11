@@ -1,9 +1,5 @@
 Filter logic for API Platform
 =============================
-UNDER DEVELOPMENT
-status:
-- only tested with Api Platform core 2.7 (metadata_backward_compatibility_layer: false)
-
 Combines API Platform ORM Filters with AND, OR and NOT according to client request.
 - supports nested logic (like parentheses in SQL)
 - supports multiple criteria for the same property

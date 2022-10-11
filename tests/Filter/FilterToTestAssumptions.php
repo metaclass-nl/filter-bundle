@@ -17,7 +17,7 @@ class FilterToTestAssumptions implements FilterInterface
 
     }
 
-    public function apply(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, Operation $operation = null, array $context = [])
+    public function apply(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, Operation $operation = null, array $context = []): void
     {
         if (isset($context['filters']['setWhere'])) {
             $field = key($context['filters']['setWhere']);

@@ -30,7 +30,7 @@ class RemoveFakeLeftJoin implements FilterInterface
         string $resourceClass,
         Operation $operation = null,
         array $context = []
-    ) {
+    ): void {
        self::removeItFrom($queryBuilder);
     }
 
