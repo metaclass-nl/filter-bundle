@@ -14,7 +14,7 @@ class FilterToTestAssumptions implements FilterInterface
 {
     public function getDescription(string $resourceClass): array
     {
-
+        return [];
     }
 
     public function apply(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, Operation $operation = null, array $context = []): void

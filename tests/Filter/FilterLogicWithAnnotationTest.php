@@ -26,8 +26,8 @@ class FilterLogicWithAnnotationTest extends KernelTestCase
     private $filters;
     /** @var FilterLogic */
     private $filterLogic;
-
-    private Operation $operation;
+    /** @var Operation */
+    private $operation;
 
     public function setUp(): void
     {

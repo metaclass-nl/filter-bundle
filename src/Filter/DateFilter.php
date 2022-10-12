@@ -17,7 +17,7 @@ class DateFilter extends AbstractFilter implements DateFilterInterface
 {
     public const DOCTRINE_DATE_TYPES = ApipDateFilter::DOCTRINE_DATE_TYPES;
 
-    private ApipDateFilter $inner;
+    private $inner;
 
     public function __construct(ManagerRegistry $managerRegistry, LoggerInterface $logger = null, array $properties = null, NameConverterInterface $nameConverter = null)
     {

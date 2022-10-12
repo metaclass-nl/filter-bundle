@@ -42,7 +42,7 @@ class FilterLogic implements FilterInterface
      *   but also changes the behavior of ExistsFilter =false.
      * {@inheritdoc}
      */
-    public function __construct(ContainerInterface $filterLocator, protected ManagerRegistry $managerRegistry, protected ?LoggerInterface $logger = null, protected ?array $properties = null, protected ?NameConverterInterface $nameConverter = null, string $classExp='//', $innerJoinsLeft=false)
+    public function __construct(ContainerInterface $filterLocator, ManagerRegistry $managerRegistry, ?LoggerInterface $logger = null, ?array $properties = null, ?NameConverterInterface $nameConverter = null, string $classExp='//', $innerJoinsLeft=false)
     {
         $this->filterLocator = $filterLocator;
         $this->classExp = $classExp;
