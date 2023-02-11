@@ -160,9 +160,6 @@ they generate. As a result, combining them with OR does not work as expected wit
 nested over to-many and nullable associations. Workarounds are provided, but they
 do change the behavior of ExistsFilter =false.
 
-Only works with filters implementing ContextAwareFilterInterface, other filters
-are ignoored.
-
 Assumes that filters create <b>semantically complete expressions</b> in the sense that
 expressions added to the QueryBuilder through ::andWhere or ::orWhere do not depend
 on one another so that the intended logic is not compromised if they are recombined
