@@ -17,6 +17,7 @@ class MetaclassFilterExtension extends Extension
 {
     /**
      * {@inheritDoc}
+     * @return void
      */
     public function load(array $configs, ContainerBuilder $container)
     {
