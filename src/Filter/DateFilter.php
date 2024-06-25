@@ -52,12 +52,16 @@ class DateFilter extends AbstractFilter implements DateFilterInterface
         }
 
         $oldWhere = $queryBuilder->getDQLPart('where');
-        $queryBuilder->add('where', null);
+        $queryBuilder->resetDQLPart('where');
 
         $this->inner->apply($queryBuilder, $queryNameGenerator, $resourceClass, $operation, $contextCopy);
 
         $expressions = $queryBuilder->getDQLPart('where')->getParts();
-        $queryBuilder->add('where', $oldWhere);
+        if ($oldWhere === null) {
+            $queryBuilder->resetDQLPart('where');
+        } else {
+            $queryBuilder->add('where', $oldWhere); //restores old where
+        }
 
         $isNotNull = array_shift($expressions);
         foreach ($expressions as $expr) {

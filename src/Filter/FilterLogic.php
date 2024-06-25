@@ -142,7 +142,11 @@ class FilterLogic implements FilterInterface
         $this->applyFilters($queryBuilder, $queryNameGenerator, $resourceClass, $operation, $subcontext);
 
         $newWhere = $queryBuilder->getDQLPart('where');
-        $queryBuilder->add('where', $oldWhere); //restores old where
+        if ($oldWhere === null) {
+            $queryBuilder->resetDQLPart('where');
+        } else {
+            $queryBuilder->add('where', $oldWhere); //restores old where
+        }
 
         // force $operator logic upon $newWhere
         $expressions = $this->getAppliedExpressions($newWhere, $marker);
