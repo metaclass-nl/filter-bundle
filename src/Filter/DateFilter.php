@@ -19,7 +19,7 @@ class DateFilter extends AbstractFilter implements DateFilterInterface
 
     private $inner;
 
-    public function __construct(ManagerRegistry $managerRegistry, LoggerInterface $logger = null, array $properties = null, NameConverterInterface $nameConverter = null)
+    public function __construct(ManagerRegistry $managerRegistry, ?LoggerInterface $logger = null, ?array $properties = null, ?NameConverterInterface $nameConverter = null)
     {
         parent::__construct($managerRegistry, $logger, $properties, $nameConverter);
         $this->inner = new ApipDateFilter($managerRegistry, $logger, $properties, $nameConverter);
@@ -36,7 +36,7 @@ class DateFilter extends AbstractFilter implements DateFilterInterface
     /**
      * {@inheritdoc}
      */
-    protected function filterProperty(string $property, $values, QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, Operation $operation = null, array $context = []): void
+    protected function filterProperty(string $property, $values, QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, ?Operation $operation = null, array $context = []): void
     {
         // Expect $values to be an array having the period as keys and the date value as values
         if (!\is_array($values)) {
