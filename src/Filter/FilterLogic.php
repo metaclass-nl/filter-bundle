@@ -60,7 +60,7 @@ class FilterLogic implements FilterInterface
      * {@inheritdoc}
      * @throws \LogicException if assumption proves wrong
      */
-    public function apply(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, Operation $operation = null, array $context = []): void
+    public function apply(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, ?Operation $operation = null, array $context = []): void
     {
         if (!isset($context['filters']) || !\is_array($context['filters'])) {
             throw new \InvalidArgumentException('::apply without $context[filters] not supported');
@@ -101,7 +101,7 @@ class FilterLogic implements FilterInterface
     /**
      * @throws \LogicException if assumption proves wrong
      */
-    protected function doGenerate($queryBuilder, $queryNameGenerator, $resourceClass, Operation $operation = null, $context)
+    protected function doGenerate($queryBuilder, $queryNameGenerator, $resourceClass, ?Operation $operation = null, $context)
     {
         if (empty($context['filters'])) {
             return [];
@@ -172,7 +172,7 @@ class FilterLogic implements FilterInterface
     /**
      * @throws \LogicException if assumption proves wrong
      */
-    protected function filterProperty(string $property, $value, QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, Operation $operation = null, $context=[])
+    protected function filterProperty(string $property, $value, QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, ?Operation $operation = null, $context=[])
     {
         $subcontext = $context; //copies
         $subcontext['filters'] = $value;
@@ -180,7 +180,7 @@ class FilterLogic implements FilterInterface
     }
 
     /** Calls ::apply on each filter in $filters */
-    private function applyFilters($queryBuilder, $queryNameGenerator, $resourceClass, Operation $operation = null, $context)
+    private function applyFilters($queryBuilder, $queryNameGenerator, $resourceClass, ?Operation $operation = null, $context)
     {
         foreach ($this->filters as $filter) {
             $filter->apply($queryBuilder, $queryNameGenerator, $resourceClass, $operation, $context);
@@ -229,7 +229,7 @@ class FilterLogic implements FilterInterface
      * @param Operation $operation
      * @return FilterInterface[] From resource except $this and OrderFilters
      */
-    protected function getFilters(Operation $operation = null)
+    protected function getFilters(?Operation $operation = null)
     {
         $resourceFilters = $operation ? $operation->getFilters() : [];
 

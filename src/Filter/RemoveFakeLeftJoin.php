@@ -28,7 +28,7 @@ class RemoveFakeLeftJoin implements FilterInterface
         QueryBuilder $queryBuilder,
         QueryNameGeneratorInterface $queryNameGenerator,
         string $resourceClass,
-        Operation $operation = null,
+        ?Operation $operation = null,
         array $context = []
     ): void {
        self::removeItFrom($queryBuilder);
