@@ -101,7 +101,7 @@ class FilterLogic implements FilterInterface
     /**
      * @throws \LogicException if assumption proves wrong
      */
-    protected function doGenerate($queryBuilder, $queryNameGenerator, $resourceClass, ?Operation $operation = null, $context)
+    protected function doGenerate($queryBuilder, $queryNameGenerator, $resourceClass, ?Operation $operation = null, $context=[])
     {
         if (empty($context['filters'])) {
             return [];
@@ -180,7 +180,7 @@ class FilterLogic implements FilterInterface
     }
 
     /** Calls ::apply on each filter in $filters */
-    private function applyFilters($queryBuilder, $queryNameGenerator, $resourceClass, ?Operation $operation = null, $context)
+    private function applyFilters($queryBuilder, $queryNameGenerator, $resourceClass, ?Operation $operation = null, $context=[])
     {
         foreach ($this->filters as $filter) {
             $filter->apply($queryBuilder, $queryNameGenerator, $resourceClass, $operation, $context);
