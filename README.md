@@ -1,3 +1,5 @@
+Maybe obsolete as of API Platform 4.2? See [this issue](https://github.com/metaclass-nl/filter-bundle/issues/23).
+
 Filter logic for API Platform
 =============================
 Combines API Platform ORM Filters with AND, OR and NOT according to client request.
