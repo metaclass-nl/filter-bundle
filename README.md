@@ -6,10 +6,10 @@ Combines API Platform ORM Filters with AND, OR and NOT according to client reque
 - supports nested logic (like parentheses in SQL)
 - supports multiple criteria for the same property
 - existing requests keep working unmodified if not using "and", "or" or "not" as query parameters.
-- works with built in filters of Api Platform, except for DateFilter
+- works with built-in filters of Api Platform, except for DateFilter
   with EXCLUDE_NULL. A DateFilter subclass is provided to correct this.
 - For security reasons as of version 2.0 criteria from extensions and filters that
-  are not nested in "and", "or" or "not" are allways combined through AND with the criteria  
+  are not nested in "and", "or" or "not" are always combined through AND with the criteria
   added by LogicFilter
 
 Usage
@@ -26,15 +26,15 @@ class Offer {
 // ...
 }
 ```
-Callling the collection get operation with:
+Calling the collection get operation with:
 ```uri
 /offers/?or[price]=10&or[description]=shirt
 ```
 will return all offers with a price being exactly 10 OR a description containing the word "shirt".
 
-NOT expressions are combined like the other expressions trough the compound logic (and, or) they are nested in:  
+NOT expressions are combined like the other expressions through the compound logic (and, or) they are nested in:
 ```uri
-/offers/?or[not][price]=10&or[not][description]=shirt 
+/offers/?or[not][price]=10&or[not][description]=shirt
 ```
 will return (all offers with a price not being 10) OR (a description NOT containing the word "shirt").
 If they are not nested in compound logic AND is used:
@@ -43,10 +43,10 @@ You can have nested logic and multiple criteria for the same property like this:
 ```uri
 /offers/?and[price]=10&and[][description]=shirt&and[][description]=cotton
 ```
-The api will return all offers with a price being exactly 10 AND 
+The api will return all offers with a price being exactly 10 AND
 (a description containing the word "shirt" AND the word "cotton").
 
-Expressions that are nested in "and", "or" or "not" are allways combined with normal 
+Expressions that are nested in "and", "or" or "not" are always combined with normal
 expressions by AND. For example:
 ```uri
 /offers/?price=10&not[description]=shirt
@@ -62,16 +62,16 @@ So this is the same as:
 ```uri
 /offers/?and[price]=10&and[or][][description]=shirt&and[or][][description]=cotton
 ```
-This may be counterintuitive but it is necessary because the querybuilder may also contain
-expressons from extensions that limit access to the data for security and if those
+This may be counterintuitive, but it is necessary because the querybuilder may also contain
+expressions from extensions that limit access to the data for security and if those
 are combined through OR they can be bypassed by the client.
 
 If you want them to be combined by or, move them to be nested in "or":
 ```uri
 /offers/?or[price]=10&or[][description]=shirt&or[][description]=cotton
 ```
-The api will then return all offers with a price being exactly 10 
-OR a description containing the word "shirt" 
+The api will then return all offers with a price being exactly 10
+OR a description containing the word "shirt"
 OR a description containing the word "cotton".
 
 
@@ -83,24 +83,27 @@ will only apply API Platform ORM Filters in logic context.
 
 Installation
 ------------
-This version is for Api Platform 3.0 and 2.7 with metadata_backward_compatibility_layer set to false
+This version is for Api Platform 4.0, 3.0 and 2.7 with `metadata_backward_compatibility_layer` set to false
 ```shell
 composer require metaclass-nl/filter-bundle "^3.0"
 ```
 
 Then add the bundle to your api config/bundles.php:
-```php
+```php8
     // (...)
     Metaclass\FilterBundle\MetaclassFilterBundle::class => ['all' => true],
 ];
 ```
+
+If you are using Api Platform < v4.0.8 and get ambiguous class resolution warning messages,
+please use Metaclass FilterBundle v3.4.
 
 Nested properties workaround
 ----------------------------
 
 The built-in filters of Api Platform normally generate INNER JOINs. As a result
 combining them with OR may not produce results as expected for properties
-nested over nullable and to many associations, , see [this issue](https://github.com/metaclass-nl/filter-bundle/issues/2).
+nested over nullable and to many associations, see [this issue](https://github.com/metaclass-nl/filter-bundle/issues/2).
 
 As a workaround FilterLogic can convert all inner joins into left joins:
 ```php8
@@ -111,7 +114,7 @@ class Article {
 // ...
 }
 ```
-<b>SECURITY WARNING</b>: do not use this option if the working of any of the extionsions 
+<b>SECURITY WARNING</b>: do not use this option if the working of any of the extensions
 you use relies on INNER JOINS selecting only rows with NOT NULL values!
 
 In case you do not like FilterLogic messing with the joins you can make
@@ -155,9 +158,9 @@ Limitations
 -----------
 Combining filters through OR and nested logic may be a harder task for your
 database and require different indexes. Except for small tables performance
-testing and analysis is advisable prior to deployment.  
+testing and analysis is advisable prior to deployment.
 
-The built in filters of Api Platform IMHO contain a bug with respect to the JOINs 
+The built-in filters of Api Platform IMHO contain a bug with respect to the JOINs
 they generate. As a result, combining them with OR does not work as expected with properties
 nested over to-many and nullable associations. Workarounds are provided, but they
 do change the behavior of ExistsFilter =false.
@@ -167,7 +170,7 @@ expressions added to the QueryBuilder through ::andWhere or ::orWhere do not dep
 on one another so that the intended logic is not compromised if they are recombined
 with the others by either Doctrine\ORM\Query\Expr\Andx or Doctrine\ORM\Query\Expr\Orx.
 
-May Fail if a filter or extension uses QueryBuilder::where or ::add. 
+May Fail if a filter or extension uses QueryBuilder::where or ::add.
 
 You are advised to check the code of all custom and third party Filters and
 not to combine those that use QueryBuilder::where or ::add with FilterLogic
