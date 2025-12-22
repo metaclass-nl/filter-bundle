@@ -83,9 +83,9 @@ will only apply API Platform ORM Filters in logic context.
 
 Installation
 ------------
-This version is for Api Platform 4.0, 3.0 and 2.7 with `metadata_backward_compatibility_layer` set to false
+This version is for Api Platform 4; and 3 >= 3.2 with `metadata_backward_compatibility_layer` set to false
 ```shell
-composer require metaclass-nl/filter-bundle "^3.0"
+composer require metaclass-nl/filter-bundle "^3.5"
 ```
 
 Then add the bundle to your api config/bundles.php:
@@ -95,8 +95,8 @@ Then add the bundle to your api config/bundles.php:
 ];
 ```
 
-If you are using Api Platform < v4.0.8 and get ambiguous class resolution warning messages,
-please use Metaclass FilterBundle v3.4.
+If you are using api-platform/core or Api Platform < v4.0.8 and get ambiguous class
+resolution warning messages, please use Metaclass FilterBundle v3.4.
 
 Nested properties workaround
 ----------------------------
