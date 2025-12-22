@@ -22,13 +22,5 @@
     "require-dev": {
     },
     "suggest": {
-    },
-    "autoload": {
-        "psr-4": { "Metaclass\\FilterBundle\\": "src/" }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "Metaclass\\FilterBundle\\Tests\\": "tests/"
-        }
     }
 }
