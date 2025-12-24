@@ -85,7 +85,7 @@ Installation
 ------------
 This version is for Api Platform 4; and 3 >= 3.2 with `metadata_backward_compatibility_layer` set to false
 ```shell
-composer require metaclass-nl/filter-bundle "^3.5"
+composer require metaclass-nl/filter-bundle "^4.0"
 ```
 
 Then add the bundle to your api config/bundles.php:
