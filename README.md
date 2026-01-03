@@ -1,4 +1,4 @@
-Maybe obsolete as of API Platform 4.2? See [this issue](https://github.com/metaclass-nl/filter-bundle/issues/23).
+Configuration new in API Platform 4.2 will not be supported, EOL immmanent, see [this issue](https://github.com/metaclass-nl/filter-bundle/issues/23).
 
 Filter logic for API Platform
 =============================
