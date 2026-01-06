@@ -71,15 +71,15 @@ class TestEntity
 
     /**
      * @var TestRelated
-     * ORM\ManyToOne(targetEntity="Metaclass\FilterBundle\Entity\TestRelated", inversedBy="toMany")
+     * ORM\ManyToOne(targetEntity="Metaclass\FilterBundle\Entity\TestRelated")
      */
-    #[ORM\ManyToOne(targetEntity:"Metaclass\FilterBundle\Entity\TestRelated", inversedBy:"toMany")]
+    #[ORM\ManyToOne(targetEntity:"Metaclass\FilterBundle\Entity\TestRelated")]
     public $toOneNullable;
 
     /**
      * @var Collection
-     * ORM\OneToMany(targetEntity="Metaclass\FilterBundle\Entity\TestRelated", mappedBy="project")
+     * ORM\OneToMany(targetEntity="Metaclass\FilterBundle\Entity\TestRelated", mappedBy="testEntity")
      */
-    #[ORM\OneToMany(targetEntity:"Metaclass\FilterBundle\Entity\TestRelated", mappedBy:"project")]
+    #[ORM\OneToMany(targetEntity:"Metaclass\FilterBundle\Entity\TestRelated", mappedBy:"testEntity")]
     public $toMany;
 }
